@@ -1,6 +1,9 @@
 #!/bin/sh
 #set -x
 #trap read debug
+#
+# ./go.sh >logfile.txt 2>&1
+###############################################
 
 # Determine RUNDIR, sensitive to softlinks
 # From: https://stackoverflow.com/questions/59895/getting-the-source-directory-of-a-bash-script-from-within
@@ -21,9 +24,16 @@ mkdir -p "$OUTFOLDER"
 #Download all the word documents
 #cp "$RUNDIR/sourceFiles/"*.docx "$INFOLDER"
 
+now=$(date +"%m.%d.%Y @ %H:%M")
+echo "--- BEGIN: $now ----------------------------------------------------------------"
+
 # Extract the XML from out of the word documents in the folder
-##find ../samples/*.docx -type f -exec "$RUNDIR/_extract.sh" "$OUTFOLDER" {} \;
-find ./sourceFiles/ -name *.docx -type f -exec "$RUNDIR/_extract.sh" "$OUTFOLDER" {} \;
+echo "--- Extracting... (DOCX -> XML) ------------------------------------------"
+find ./temp/ -name *.docx -type f -exec "$RUNDIR/_extract.sh" "$OUTFOLDER" {} \;
 
 # Convert the extracted files to our format
-#find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/_convert.sh" {} \;
+echo "--- Converting... (XML -> HTML) ------------------------------------------"
+find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/_convert.sh" {} \;
+
+now=$(date +"%m.%d.%Y @ %H:%M")
+echo "--- END: $now ------------------------------------------------------------------"

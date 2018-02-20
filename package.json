@@ -6,6 +6,8 @@
   "dependencies": {
     "fpath": "^0.1.5",
     "he": "^1.1.1",
+    "html-beautify": "^1.0.4",
+    "html-minifier": "^3.5.9",
     "path": "^0.12.7",
     "rename-keys": "^2.0.1",
     "xml2js": "^0.4.19",
