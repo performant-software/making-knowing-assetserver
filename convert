@@ -29,7 +29,7 @@ if [ -z "$1" ]; then
 	mkdir -p "$INFOLDER"
 
 	# Sync the google drive
-	#rclone -v --drive-shared-with-me sync google:__Manuscript\ Pages "$INFOLDER"
+	rclone -v --drive-shared-with-me sync google:__Manuscript\ Pages "$INFOLDER"
 
 else
 	BATCHMODE=false
@@ -53,8 +53,14 @@ if [ "$BATCHMODE" = true ] ; then
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
 	find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/_convert.sh" {} \;
 
+	# Organize everything into .../folio/FOLIO_ID/[tc|tcn|tl]
+	find "./CACHE/output" -name *.html -type f -exec "./_sort.sh" {} \;
+
 # Operate on single file
 else
+	printf "FIXME: single file is broken, fix it!"
+	exit
+
 	# Extract the XML from out of the word documents in the folder
 	printf "$(date +"%m.%d.%Y @ %H:%M") : (DOCX -> XML)\n"
 	"$RUNDIR/_extract.sh" "$OUTFOLDER" "$INFILE"
