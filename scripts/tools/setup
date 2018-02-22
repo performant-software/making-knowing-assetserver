@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# This is mostly for documentation, what happened on the DO droplet to get it ready
+
+cd /etc/nginx/
+rm nginx.conf
+ln -s /root/makingAndKnowing/nginx/nginx.conf nginx.conf
+rm sites-enabled 
+ln -s /root/makingAndKnowing/nginx/sites-enabled/ ./sites-enabled
+sudo systemctl reload nginx
+

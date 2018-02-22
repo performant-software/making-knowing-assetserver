@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # EDIT THESE
 ###########################################################################
@@ -38,7 +38,7 @@ if [ -z "$1" ]; then
 	printf "================================================================\n\n"
 	INFOLDER="$RUNDIR/content_import/TEMP/input"
 	mkdir -p "$INFOLDER"
-	#rclone -v --drive-shared-with-me sync "$RCLONE_SOURCE_NAME":"$GOOGLE_SHARE_NAME" "$INFOLDER"
+	rclone -v --drive-shared-with-me sync "$RCLONE_SOURCE_NAME":"$GOOGLE_SHARE_NAME" "$INFOLDER"
 
 # 1b.) SINGLE FILE
 else
@@ -62,15 +62,15 @@ if [ "$BATCHMODE" = true ] ; then
 
 	# 2.) Extract the XML from out of the word documents in the folder
 	printf "$(date +"%m.%d.%Y @ %H:%M") : (DOCX -> XML)\n"
-	#find "$INFOLDER" -name *.docx -type f -exec "$RUNDIR/content_import/_extract.sh" "$OUTFOLDER" {} \;
+	find "$INFOLDER" -name *.docx -type f -exec "$RUNDIR/content_import/_extract.sh" "$OUTFOLDER" {} \;
 
 	# 3.) Convert the extracted files to our format
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
-	#find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/content_import/_convert.sh" {} \;
+	find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/content_import/_convert.sh" {} \;
 
 	# 4.) Organize everything into .../folio/FOLIO_ID/[tc|tcn|tl]
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Sorting files...\n"
-	#find "$RUNDIR/content_import/TEMP/output" -name *.html -type f -exec "$RUNDIR/content_import/_sort.sh" "$DST_FOLIO" "$DST_UNKNOWN" {} \;
+	find "$RUNDIR/content_import/TEMP/output" -name *.html -type f -exec "$RUNDIR/content_import/_sort.sh" "$DST_FOLIO" "$DST_UNKNOWN" {} \;
 
 # Operate on single file
 else

@@ -1,0 +1,68 @@
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+	<script>
+		$.ajaxSetup ({
+    		// Disable caching of AJAX responses
+    		cache: false
+		});
+		$(document).ready(function() {
+			$("#log").html("no log found");
+			$("#status").html("Status: unknown");
+			$("#start_date").html("");
+			$("#end_date").html("");
+
+			$.getJSON( "./import_status.json", function( data ) {
+			  	$("#status").html("Status: "+data.progress);
+			  	$("#start_date").html(data.start);
+			  	$("#end_date").html(data.end);
+				$.get( data.logfile, function( data ) {
+  					$("#log").html(data);
+				});
+				$('#log_link').html("[<a href='"+data.logfile+"'>download log</a>]");
+			});
+
+		});
+	</script>
+	<style>
+		#content {
+			width: 50rem;
+			margin: 0 auto 0 auto;
+		}
+
+		#log {
+			display: inline-block;
+			width: 100%;
+			background-color: #ffffff4a;
+			border-radius: .3rem;
+			padding: .2 0 0 1rem;
+			font-family: Lucida Console, Lucida Sans Typewriter, monaco, Bitstream Vera Sans Mono, monospace;
+			height: 30rem;
+			width: 50rem;
+			line-height: 1rem;
+			font-size: .2rem;
+			color: #a2b2b9;
+			overflow-y: scroll;
+			background-color: rgba(35, 67, 109, 1);
+			white-space: pre;
+			border: 1px #a2b2b9 dotted;
+		}
+	</style>
+
+</head>
+
+<body>
+	<div id="content">
+		<h1 id="status">Status:  </h1>
+			<b>Begin: <span id="start_date"></span><br>
+			<b>End: <span id="end_date"></span><br>
+			<br>
+			<div id="logbox">
+				<div id="log_link"></div>
+				<div id="log"></div>
+			</div>
+		</div>
+	</body>
+</html>

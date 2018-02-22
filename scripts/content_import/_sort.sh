@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #find "./CACHE/output" -name *.html -type f -exec "./_sort.sh" {} \;
 FOLIO_OUTPATH=$1
 UNKNOWN_OUTPATH=$2

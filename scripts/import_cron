@@ -1,0 +1,40 @@
+#!/bin/bash
+WEBROOT="../nginx/webroot"
+LOG_FILE="$WEBROOT/logfile.txt"
+JSON_STATUS_FILE="$WEBROOT/import_status.json"
+LOCK_FILE="./.lock"
+
+write_json_status()
+{
+	printf '{' > $JSON_STATUS_FILE;
+	printf '"start":"%s"' "$ts_start" >> $JSON_STATUS_FILE;
+	printf ',' >> $JSON_STATUS_FILE;
+	printf '"logfile":"%s"' "$(basename $LOG_FILE)" >> $JSON_STATUS_FILE;
+	printf ',' >> $JSON_STATUS_FILE;
+	printf '"progress":"%s"' "$progress" >> $JSON_STATUS_FILE;
+	printf ',' >> $JSON_STATUS_FILE;
+	printf '"end":"%s"' "$ts_end" >> $JSON_STATUS_FILE;
+	printf '}' >> $JSON_STATUS_FILE;
+}
+
+# Makes sure we exit if flock fails.
+set -e
+(
+    # Wait for lock for 10 seconds
+    flock -n 200
+
+	# Copy the human readable HTML in place
+	yes | \cp -rf "./content_import/import_status.html" "$WEBROOT"
+
+	progress="In Progress..."
+	ts_start=$(date +"%m.%d.%Y @ %H:%M")
+	ts_end=''
+	write_json_status
+
+	./import >$LOG_FILE 2>&1
+
+	progress="Complete"
+	ts_end=$(date +"%m.%d.%Y @ %H:%M")
+	write_json_status
+
+) 200>$LOCK_FILE

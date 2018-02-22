@@ -12,26 +12,10 @@ server {
 	server_name _;
 
 	location / {
+
 		# First attempt to serve request as file, then
 		# as directory, then fall back to displaying a 404.
 		try_files $uri $uri/ =404;
-	}
-
-
-	location /api/ {
-		default_type  application/json;
-		proxy_hide_header Content-Location;
-		add_header Content-Location  /api/$upstream_http_content_location;
-		proxy_set_header  Connection "";
-		proxy_http_version 1.1;
-		proxy_pass http://postgrest/;
-
-		# NOTE: The CORS headers are already permissive for postgREST, so you
-		# don't need to set them here, if you do you'll get a double-header issue
-	}
-
-	location /assets/ {
-
 
 		# Permissive CORS
 		if ($request_method = 'OPTIONS') {
@@ -57,7 +41,7 @@ server {
            add_header 'Access-Control-Allow-Headers' 'DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization';
         }
 
-		alias /root/laboParis/assets/;
+		alias /root/makingAndKnowing/nginx/webroot/;
 	}
 
 }

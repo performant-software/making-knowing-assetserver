@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #set -x
 #trap read debug
 INFILE="$2"
