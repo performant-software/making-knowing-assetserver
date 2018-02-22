@@ -1,0 +1,63 @@
+upstream postgrest {
+		server localhost:3000;
+		keepalive 64;
+}
+
+server {
+	listen 80 default_server;
+	listen [::]:80 default_server;
+	root /var/www/html;
+	index  index.html index.htm;
+	autoindex on;
+	server_name _;
+
+	location / {
+		# First attempt to serve request as file, then
+		# as directory, then fall back to displaying a 404.
+		try_files $uri $uri/ =404;
+	}
+
+
+	location /api/ {
+		default_type  application/json;
+		proxy_hide_header Content-Location;
+		add_header Content-Location  /api/$upstream_http_content_location;
+		proxy_set_header  Connection "";
+		proxy_http_version 1.1;
+		proxy_pass http://postgrest/;
+
+		# NOTE: The CORS headers are already permissive for postgREST, so you
+		# don't need to set them here, if you do you'll get a double-header issue
+	}
+
+	location /assets/ {
+
+
+		# Permissive CORS
+		if ($request_method = 'OPTIONS') {
+           add_header 'Access-Control-Allow-Origin' '*';
+           add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+           add_header 'Access-Control-Allow-Headers' 'Cache-Control,Content-Type,Authorization';
+           add_header 'Access-Control-Max-Age' 1728000;
+           add_header 'Content-Type' 'application/json charset=UTF-8';
+           add_header 'Content-Length' 0;
+           return 204;
+        }
+
+        if ($request_method = 'POST') {
+           add_header 'Access-Control-Allow-Origin' '*';
+           add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+           add_header 'Access-Control-Allow-Headers' 'Content-Type,Authorization';
+        }
+
+        if ($request_method = 'GET') {
+
+           add_header 'Access-Control-Allow-Origin' '*';
+           add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+           add_header 'Access-Control-Allow-Headers' 'DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization';
+        }
+
+		alias /root/laboParis/assets/;
+	}
+
+}
