@@ -37,17 +37,17 @@ node install
 
 Invoking Manually
 -----------------
-The server is configured to invoke the batch conversion periodically via cron. If you want to invoke it manually:
+The server is configured to invoke the batch conversion *./import_cron* periodically via cron. If you want to invoke it manually:
 
 Do everything, includes sync from Google:  
-```./import ```
+```./import_interactive ```
 
-Log to a file:  
-```./import >logfile.txt 2>&1```
+Log to a file instead of console:  
+```./import_interactive >logfile.txt 2>&1```
 
 
 Single file (file should be local first):  
-```./import /path/to/file.docx ```
+```./import_interactive /path/to/file.docx ```
 
-Send log output to a file:  
-```./import /path/to/file.docx  >logfile.txt 2>&1```
+Log to a file instead of console:  
+```./import_interactive /path/to/file.docx  >logfile.txt 2>&1```

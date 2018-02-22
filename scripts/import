@@ -1,10 +1,20 @@
 #!/bin/sh
-set -x
-trap read debug
+
+# EDIT THESE
 ###########################################################################
 GOOGLE_SHARE_NAME=__Manuscript\ Pages
+RCLONE_SOURCE_NAME=google
 
+DST_FOLIO="../nginx/webroot/folio"
+DST_UNKNOWN="../nginx/webroot/unknown"
+
+
+# DO NOT EDIT BELOW THIS LINE
 ###########################################################################
+
+# Uncomment to step
+##set -x
+##trap read debug
 
 # Determine RUNDIR, sensitive to softlinks
 # From: https://stackoverflow.com/questions/59895/getting-the-source-directory-of-a-bash-script-from-within
@@ -19,23 +29,27 @@ export RUNDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 # Set up environment and temp dirs for processing
 printf "\n================================================================\n"
 printf "$(date +"%m.%d.%Y @ %H:%M") : BEGIN \n"
-printf "================================================================\n\n"
+printf "================================================================\n"
 
-# BATCH MODE
+# 1a.) BATCH MODE
 if [ -z "$1" ]; then
 	BATCHMODE=true
-	printf "=== INPUT: Batch operation, Synchronizing with Google\n"
+	printf "BATCH operation: Synchronizing with Google\n"
+	printf "================================================================\n\n"
 	INFOLDER="$RUNDIR/content_import/TEMP/input"
 	mkdir -p "$INFOLDER"
+	#rclone -v --drive-shared-with-me sync "$RCLONE_SOURCE_NAME":"$GOOGLE_SHARE_NAME" "$INFOLDER"
 
-	# Sync the google drive
-	rclone -v --drive-shared-with-me sync google:"$GOOGLE_SHARE_NAME" "$INFOLDER"
-
-# SINGLE FILE
+# 1b.) SINGLE FILE
 else
-	BATCHMODE=false
 	INFILE="$1"
-	printf "=== INPUT: $INFILE\n\n"
+	if [ ! -f "$INFILE" ]; then
+   		echo "ERROR: '$INFILE' does not exist."
+		exit 1
+	fi
+	BATCHMODE=false
+	printf "$INFILE\n"
+	printf "================================================================\n\n"
 
 fi
 
@@ -43,36 +57,37 @@ fi
 OUTFOLDER="$RUNDIR/content_import/TEMP/output"
 mkdir -p "$OUTFOLDER"
 
-
 # Operate on entire directory
 if [ "$BATCHMODE" = true ] ; then
 
-	# Extract the XML from out of the word documents in the folder
+	# 2.) Extract the XML from out of the word documents in the folder
 	printf "$(date +"%m.%d.%Y @ %H:%M") : (DOCX -> XML)\n"
-	find "$INFOLDER" -name *.docx -type f -exec "$RUNDIR/_extract.sh" "$OUTFOLDER" {} \;
+	#find "$INFOLDER" -name *.docx -type f -exec "$RUNDIR/content_import/_extract.sh" "$OUTFOLDER" {} \;
 
-	# Convert the extracted files to our format
+	# 3.) Convert the extracted files to our format
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
-	find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/_convert.sh" {} \;
+	#find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/content_import/_convert.sh" {} \;
 
-	# Organize everything into .../folio/FOLIO_ID/[tc|tcn|tl]
-	find "./content_import/TEMP/output" -name *.html -type f -exec "./content_import/_sort.sh" {} \;
+	# 4.) Organize everything into .../folio/FOLIO_ID/[tc|tcn|tl]
+	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Sorting files...\n"
+	#find "$RUNDIR/content_import/TEMP/output" -name *.html -type f -exec "$RUNDIR/content_import/_sort.sh" "$DST_FOLIO" "$DST_UNKNOWN" {} \;
 
 # Operate on single file
 else
 
-	printf "FIXME: single file is broken, fix it!"
-	exit
-
-	# Extract the XML from out of the word documents in the folder
+	# 2.) Extract the XML from out of the word document
 	printf "$(date +"%m.%d.%Y @ %H:%M") : (DOCX -> XML)\n"
 	"$RUNDIR/content_import/_extract.sh" "$OUTFOLDER" "$INFILE"
 
-	# Convert the extracted files to our format
-	printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
+	# 3.) Convert the extracted files to our format
 	INFILE="$OUTFOLDER/$(basename "$(dirname "$INFILE")")/$(basename "$INFILE").xml"
+	printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
 	"$RUNDIR/content_import/_convert.sh" "$INFILE"
 
+	# 4.) Organize everything into .../folio/FOLIO_ID/[tc|tcn|tl]
+	INFILE="$(echo $INFILE)_converted.html"
+	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Sorting files...\n"
+	"$RUNDIR/content_import/_sort.sh" "$DST_FOLIO" "$DST_UNKNOWN" "$INFILE"
 fi
 
 printf "\n================================================================\n"
