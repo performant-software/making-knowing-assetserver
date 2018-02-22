@@ -44,7 +44,7 @@ user@makingandknowing:~/#>
 Invoking Manually
 -----------------
 - The server is configured to invoke the batch conversion *./import_cron* periodically via cron.  
-```*/20 * * * * .../import_cron```
+```*/20 * * * * . $HOME/.profile;/root/makingAndKnowing/scripts/import_cron```
 
 If you want to invoke it manually:
 
