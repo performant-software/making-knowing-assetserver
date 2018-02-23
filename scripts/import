@@ -8,6 +8,11 @@ RCLONE_SOURCE_NAME=google
 DST_FOLIO="../nginx/webroot/folio"
 DST_UNKNOWN="../nginx/webroot/unknown"
 
+# FIXME: Assumes it's either set up on DO instance or running locally on OSX
+case $HOSTNAME in
+  (makingandknowing-asset)	 RCLONE_CONFIG_FILE="/root/.config/rclone/rclone.conf";;
+  (*) RCLONE_CONFIG_FILE="/Users/$USER/.config/rclone/rclone.conf";;
+esac
 
 # DO NOT EDIT BELOW THIS LINE
 ###########################################################################
@@ -26,6 +31,12 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 export RUNDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
+
+# FIXME: Necessary for cron run, but should make more flexible
+DST_FOLIO="$RUNDIR/$DST_FOLIO"
+DST_UNKNOWN="$RUNDIR/$DST_UNKNOWN"
+
+
 # Set up environment and temp dirs for processing
 printf "\n================================================================\n"
 printf "$(date +"%m.%d.%Y @ %H:%M") : BEGIN \n"
@@ -38,14 +49,13 @@ if [ -z "$1" ]; then
 	printf "================================================================\n\n"
 	INFOLDER="$RUNDIR/content_import/TEMP/input"
 	mkdir -p "$INFOLDER"
-	rclone -v --drive-shared-with-me sync "$RCLONE_SOURCE_NAME":"$GOOGLE_SHARE_NAME" "$INFOLDER"
-
+	rclone --config="$RCLONE_CONFIG_FILE" -v --drive-shared-with-me sync "$RCLONE_SOURCE_NAME":"$GOOGLE_SHARE_NAME" "$INFOLDER"
+exit 1
 # 1b.) SINGLE FILE
 else
 	INFILE="$1"
 	if [ ! -f "$INFILE" ]; then
    		echo "ERROR: '$INFILE' does not exist."
-		exit 1
 	fi
 	BATCHMODE=false
 	printf "$INFILE\n"
@@ -67,6 +77,9 @@ if [ "$BATCHMODE" = true ] ; then
 	# 3.) Convert the extracted files to our format
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
 	find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/content_import/_convert.sh" {} \;
+
+	# touch the convert script to indicate last time it was run
+	touch "$RUNDIR/content_import/_convert.sh"
 
 	# 4.) Organize everything into .../folio/FOLIO_ID/[tc|tcn|tl]
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Sorting files...\n"

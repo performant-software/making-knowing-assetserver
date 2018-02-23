@@ -9,7 +9,8 @@ filename="$(cut -d'.' -f1 <<<$filename)"
 transcriptionType="$(cut -d'_' -f1 <<<$filename)"
 folioID="$(cut -d'_' -f2 <<<$filename)"
 
-if [[ ${folioID:0:1} == 'p' ]]
+# Folios should start with p and be no longer than 5chars
+if [[ ${folioID:0:1} == 'p' ] && ${#folioID} -le 5  ]]
 then
 	exportPath="$FOLIO_OUTPATH/$folioID/$transcriptionType";
 else

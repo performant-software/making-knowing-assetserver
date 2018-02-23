@@ -4,4 +4,5 @@ tools
 rsync_exclude.txt
 .git
 README.md
+webroot
 TEMP
