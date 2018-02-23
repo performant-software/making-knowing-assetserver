@@ -10,12 +10,10 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 export RUNDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-SELF="$RUNDIR/$0"
-
-if [ "$1" -nt "$SELF" ]
-then
+SELF="$0"
+if [ "$1" -nt "$SELF" ]; then
+	touch "$1"
 	echo " $1"
 	node  $RUNDIR/_convert.js --src "$1" > "$1_converted.html"
-else
-	echo " SKIPPING: $1"
+#else echo " SKIPPING: $1"
 fi

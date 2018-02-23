@@ -12,6 +12,11 @@ Example:
 http://159.65.186.2/folio/p001v/tcn
 ```
 
+Manifest of all folios:
+```
+http://159.65.186.2/folio/manifest.json
+```
+
 To see the status of the import:  
 ```
 http://159.65.186.2/import_status.json (JSON)

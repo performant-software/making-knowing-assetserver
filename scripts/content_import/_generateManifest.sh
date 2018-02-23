@@ -15,5 +15,5 @@ FOLIO_DIRECTORY="$1"
 MANIFEST_FILE="$2"
 rm -rf $MANIFEST_FILE;
 echo "[" >> $MANIFEST_FILE
-find "$FOLIO_DIRECTORY" -type d -exec "$RUNDIR/_generateManifestEntryFor.sh" {} \; >> $MANIFEST_FILE
+find "$FOLIO_DIRECTORY" ! -path . -type d -mindepth 1 -maxdepth 1 -exec "$RUNDIR/_generateManifestEntryFor.sh" {} \; >> $MANIFEST_FILE
 echo "]" >> $MANIFEST_FILE

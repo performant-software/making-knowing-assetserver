@@ -10,7 +10,7 @@ DST_UNKNOWN="../nginx/webroot/unknown"
 
 # FIXME: Assumes it's either set up on DO instance or running locally on OSX
 case $HOSTNAME in
-  (makingandknowing-asset)	 RCLONE_CONFIG_FILE="/root/.config/rclone/rclone.conf";;
+  (makingandknowing-asset) RCLONE_CONFIG_FILE="/root/.config/rclone/rclone.conf";;
   (*) RCLONE_CONFIG_FILE="/Users/$USER/.config/rclone/rclone.conf";;
 esac
 
@@ -31,11 +31,9 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 export RUNDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-
-# FIXME: Necessary for cron run, but should make more flexible
+# FIXME: Appending RUNDIR Necessary for cron run, but should make more flexible
 DST_FOLIO="$RUNDIR/$DST_FOLIO"
 DST_UNKNOWN="$RUNDIR/$DST_UNKNOWN"
-
 
 # Set up environment and temp dirs for processing
 printf "\n================================================================\n"
@@ -74,11 +72,12 @@ if [ "$BATCHMODE" = true ] ; then
 	# 2.) Extract the XML from out of the word documents in the folder
 	printf "$(date +"%m.%d.%Y @ %H:%M") : (DOCX -> XML)\n"
 	find "$INFOLDER" -name *.docx -type f -exec "$RUNDIR/content_import/_extract.sh" "$OUTFOLDER" {} \;
+	# touch the extract script to indicate last time it was run
+	touch "$RUNDIR/content_import/_extract.sh"
 
 	# 3.) Convert the extracted files to our format
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
 	find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/content_import/_convert.sh" {} \;
-
 	# touch the convert script to indicate last time it was run
 	touch "$RUNDIR/content_import/_convert.sh"
 
@@ -88,7 +87,7 @@ if [ "$BATCHMODE" = true ] ; then
 
 	# 5.) Create /folio/manifest.json
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Creating manifest...\n"
-	"$RUNDIR/content_import/_generateManifest.sh" "$DST_FOLIO" "$DST_FOLIO/mainfest.json"
+	"$RUNDIR/content_import/_generateManifest.sh" "$DST_FOLIO" "$DST_FOLIO/manifest.json"
 
 # Operate on single file
 else
