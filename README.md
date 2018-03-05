@@ -51,9 +51,10 @@ user@makingandknowing:~/#> ./import
 user@makingandknowing:~/#> ./init
 user@makingandknowing:~/#> ./import
 ```
-Why??:   
-Each full import takes about 10 minutes depending on local weather conditions. Because of this, I have added the ability for the script to only process new files, this is the default. THE VERY FIRST TIME THAT YOU USE THIS TOOL FOR A BATCH RUN: you should also run ```./import``` which will download the files from google, it will then attempt to convert the files but they will appear older and nothing will happen. Now run ```./init``` which will set up the file dates properly. After this you will never need to run init again, as the script will only import newer files.
- - If you want to force import of all files, you may run ```./init``` again prior to import.
+__Why Init?:__  
+Each full import takes about 10 minutes depending on local weather conditions. Because of this, I have added the ability for the script to only process new files, this is the default. THE VERY FIRST TIME THAT YOU USE THIS TOOL FOR A BATCH RUN you should also run ```./import``` which will download the files from google, it will then attempt to convert the files but they will likely appear older and nothing will happen. Now run ```./init``` which will set up the file dates properly. After this you will never need to run init again, as the script will only import newer files.  
+
+ - If you subsequently want to force re-import of all files, you may run ```./init``` again.
 
  - If you want to disable this behavior entirely, comment out the if statements that look like this: ```if [ "$INFILE" -nt "$SELF" ]``` (there are two, one in _convert.sh and one in _extract.sh).
 
