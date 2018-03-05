@@ -1,0 +1,15 @@
+#!/bin/bash
+#
+# This script makes sure that all of the input files are marked "newer" so they can be processed
+# Should always be run ONCE after the first rclone, optionally when you want to force all files to convert
+#
+echo "Marking all files ready for import..."
+
+
+# Mark the scripts "now"
+touch ./content_import/_extract.sh
+touch ./content_import/_convert.sh
+
+# Force brief sleep so that the dates on all the import files really are newer
+sleep 2s
+find ./content_import/TEMP/input/ -maxdepth 2 -mindepth 2 -type f -exec touch {} +

@@ -6,7 +6,6 @@ OUTPATH="$1/$(basename "$(dirname "$2")")"
 mkdir -p "$OUTPATH"
 OUTFILE="$OUTPATH/$(basename "$INFILE").xml"
 
-
 # Determine RUNDIR, sensitive to softlinks
 # From: https://stackoverflow.com/questions/59895/getting-the-source-directory-of-a-bash-script-from-within
 SOURCE="${BASH_SOURCE[0]}"
@@ -18,6 +17,7 @@ done
 export RUNDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 SELF="$0"
+
 if [ "$INFILE" -nt "$SELF" ]; then
 	# 1. extracts the text of the word doc (unzip)
 	# 2. strips the word-specific markup using sed

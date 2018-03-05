@@ -1,0 +1,69 @@
+#content {
+	width: 50rem;
+	margin: 0 auto 0 auto;
+}
+
+#log {
+	display: inline-block;
+	width: 100%;
+	background-color: #ffffff4a;
+	border-radius: .3rem;
+	padding: .2 0 0 1rem;
+	font-family: Lucida Console, Lucida Sans Typewriter, monaco, Bitstream Vera Sans Mono, monospace;
+	height: 30rem;
+	width: 50rem;
+	line-height: 1rem;
+	font-size: .2rem;
+	color: #a2b2b9;
+	overflow-y: scroll;
+	background-color: rgba(35, 67, 109, 1);
+	white-space: pre;
+	border: 1px #a2b2b9 dotted;
+}
+
+#listing {
+	top: 3rem;
+	position: fixed;
+	background-color: #00000026;
+	float: left;
+	width: 10rem;
+	height: 95vh;
+	overflow: scroll;
+	padding: 1rem 0 5rem 1rem;
+}
+
+#transcription {
+	top: 3.5rem;
+	left: 11rem;
+	position: fixed;
+	overflow: scroll;
+	height: 95vh;
+	width: calc(100vw-20rem);
+	padding: 0 0 5rem 1rem;
+}
+
+#navbar {
+	background-color: #b0a9a9;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 1rem;
+	margin: 0;
+	z-index: 10;
+	padding: 1rem;
+}
+
+#page_title {
+	float: left;
+}
+
+#typeswitch {
+	float: right;
+	border: 1px solid #ff000000;
+	margin: 0 2rem 0 0;
+}
+
+.link:hover, .current {
+	background-color: #607D8B;
+}
