@@ -1,10 +1,72 @@
-// Includes
 const fs = require('fs');
-const util = require('util');
-const path = require('path');
 
-var domainName = "http://localhost:4000"
+var domain = "http://159.65.186.2"
+var folioPath = "/folio";
+var annotationListPath = "/bnf-ms-fr-640/list";
 
+function main() {
+  let manifestJSON = fs.readFileSync("bnf_manifest.json", "utf8");
+  let manifest = JSON.parse(manifestJSON);
+  let canvases = manifest["sequences"][0]["canvases"];
+
+  let annotationListJSON = fs.readFileSync("annotation_list.json", "utf8");
+  let blankAnnotationList = JSON.parse(annotationListJSON);
+
+  for( let canvas of canvases ) {
+    let folioID = generateFolioID(canvas["label"]);
+
+    if( folioID ) {
+      let fileName = `${folioID}.json`;
+      let annotationListURL =  `${domain}${annotationListPath}/${fileName}`;
+      let folioURL = `${domain}${folioPath}/${folioID}`;
+
+      // Add this to the manifest canvas entries:
+      // "otherContent" : [ {
+      //   "@id": "http://localhost:4000/bnf-ms-fr-640/list/p003r.json",
+      //   "@type": "sc:AnnotationList"
+      // }],
+      canvas["otherContent"] = [ {
+        "@id": annotationListURL,
+        "@type": "sc:AnnotationList"
+      } ];
+
+      // Now create the corresponding annotation file, that points to the transcriptions
+      let annoList = copyObject( blankAnnotationList );
+      annoList["@id"] = annotationListURL;
+      let transcriptionURLs = [
+        folioURL + '/tc',
+        folioURL + '/tcn',
+        folioURL + '/tl'
+      ];
+
+      let resources = annoList["resources"];
+      for( let i=0; i < 3; i++ ) {
+        resources[i]["resource"]["@id"] = transcriptionURLs[i];
+        resources[i]["on"] = annotationListURL;
+      }
+
+      fs.writeFile(`TEMP/list/${fileName}`, JSON.stringify(annoList, null, 3), (err) => {
+        if (err) throw err;
+      });
+    }
+  }
+
+  // Write out the manifest that was created.
+  fs.writeFile('TEMP/manifest.json', JSON.stringify(manifest, null, 3), (err) => {
+      if (err) {
+        console.log(err);
+      } else {
+        // success case, the file was saved
+        console.log('IIIF Manifest created.');
+      };
+
+  });
+}
+
+
+function copyObject(a) {
+  return JSON.parse(JSON.stringify(a));
+}
 
 function generateFolioID( bnfLabel ) {
   // grab r or v off the end
@@ -28,37 +90,6 @@ function generateFolioID( bnfLabel ) {
   return `p${zeros.concat(id)}${rectoOrVerso}`;
 }
 
-// Add this to the manifest canvas entries:
-// "otherContent" : [ {
-//   "@id": "http://localhost:4000/bnf-ms-fr-640/list/p003r.json",
-//   "@type": "sc:AnnotationList"
-// }],
 
-let json = fs.readFileSync("bnf_manifest.json", "utf8");
-let manifest = JSON.parse(json);
-let canvases = manifest["sequences"][0]["canvases"];
-
-for( let canvas of canvases ) {
-  let folioID = generateFolioID(canvas["label"]);
-
-  if( folioID ) {
-    let annotationListURL =  `${domainName}/bnf-ms-fr-640/list/${folioID}.json`;
-
-    canvas["otherContent"] = [ {
-      "@id": annotationListURL,
-      "@type": "sc:AnnotationList"
-    } ];
-  }
-
-  // since we're here, shouldn't we also write out the annotation files?
-}
-
-fs.writeFile('TEMP/manifest.json', JSON.stringify(manifest, null, 3), (err) => {
-    if (err) {
-      console.log(err);
-    } else {
-      // success case, the file was saved
-      console.log('IIIF Manifest created.');
-    };
-
-});
+///// RUN THE SCRIPT
+main();
