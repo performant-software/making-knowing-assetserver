@@ -1,8 +1,10 @@
 const fs = require('fs');
 
-var domain = "http://159.65.186.2"
+var iiifDomain = "http://edition-staging.makingandknowing.org"
+var transcriptionDomain = "http://159.65.186.2"
 var folioPath = "/folio";
 var annotationListPath = "/bnf-ms-fr-640/list";
+var outputDir = "TEMP";
 
 function main() {
   let manifestJSON = fs.readFileSync("bnf_manifest.json", "utf8");
@@ -12,13 +14,18 @@ function main() {
   let annotationListJSON = fs.readFileSync("annotation_list.json", "utf8");
   let blankAnnotationList = JSON.parse(annotationListJSON);
 
+  // make dirs for output, if necessary
+  let listDir = outputDir+"/list";
+  if( !fs.existsSync(outputDir) ) fs.mkdirSync(outputDir);
+  if( !fs.existsSync(listDir) ) fs.mkdirSync(listDir);
+
   for( let canvas of canvases ) {
     let folioID = generateFolioID(canvas["label"]);
 
     if( folioID ) {
       let fileName = `${folioID}.json`;
-      let annotationListURL =  `${domain}${annotationListPath}/${fileName}`;
-      let folioURL = `${domain}${folioPath}/${folioID}`;
+      let annotationListURL =  `${iiifDomain}${annotationListPath}/${fileName}`;
+      let folioURL = `${transcriptionDomain}${folioPath}/${folioID}`;
 
       // Add this to the manifest canvas entries:
       // "otherContent" : [ {
