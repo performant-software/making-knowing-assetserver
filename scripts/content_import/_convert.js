@@ -135,7 +135,8 @@ for(var idx=0;idx<docparts.length;idx++){
 }
 
 // Strip all <figure> tags
-xml = xml.replace(/<figure>.*<\/figure>/g, '');
+// Per https://github.com/cu-mkp/making-knowing-edition/issues/22, replace them with empty div
+xml = xml.replace(/<figure>.*<\/figure>/g, '<div></div>');
 
 
 // Beautify HTML
