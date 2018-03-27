@@ -46,14 +46,15 @@ function main() {
       if( folio.startsWith('.') ) return;
 
       // get contents of folio file
-      let tcHTML = fs.readFileSync(`${folioDir}/${folio}/tc/index.html`, "utf8");
+      // let tcHTML = fs.readFileSync(`${folioDir}/${folio}/tc/index.html`, "utf8");
+      let tlHTML = fs.readFileSync(`${folioDir}/${folio}/tl/index.html`, "utf8");
 
       // TODO
       // pull html from each of the three subfolders
       // index tc and tcn in french, tl in english
 
       // grab just the contents of folio element and then strip all tags from that
-      let folioContent = parseTranscription(tcHTML);
+      let folioContent = parseTranscription(tlHTML);
 
       let folioDocument = {
         id: folio,
