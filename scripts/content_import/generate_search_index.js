@@ -1,10 +1,10 @@
 const fs = require('fs');
 const lunr = require('lunr');
 
-// const webRoot = "../../nginx/webroot";
-const webRoot = "TEMP/testindex";
+const webRoot = "../../nginx/webroot";
+// const webRoot = "TEMP/testindex";
 const folioDir = `${webRoot}/folio`;
-const searchIndexFile = `${webRoot}/searchIndex.js`;
+const searchIndexFile = `${webRoot}/search_index.js`;
 
 
 // returns transcription or null if unable to parse
@@ -38,12 +38,16 @@ function main() {
   var searchIndex = lunr(function () {
     this.ref('id')
     this.field('content')
+    this.metadataWhitelist = ['position'];
 
     let folios = fs.readdirSync(folioDir);
     folios.forEach( folio => {
 
       // ignore hidden directories
       if( folio.startsWith('.') ) return;
+
+      // ignore the manifest file
+      if( folio.startsWith('manifest') ) return;
 
       // get contents of folio file
       // let tcHTML = fs.readFileSync(`${folioDir}/${folio}/tc/index.html`, "utf8");

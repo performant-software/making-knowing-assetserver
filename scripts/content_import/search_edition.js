@@ -7,9 +7,9 @@
 const fs = require('fs');
 const lunr = require('lunr');
 
-// const webRoot = "../../nginx/webroot";
-const webRoot = "TEMP/testindex";
-const searchIndexFile = `${webRoot}/searchIndex.js`;
+const webRoot = "../../nginx/webroot";
+// const webRoot = "TEMP/testindex";
+const searchIndexFile = `${webRoot}/search_index.js`;
 
 function searchEdition( searchTerm ) {
 
