@@ -2,7 +2,6 @@ const fs = require('fs');
 const lunr = require('lunr');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
-const _ = require('lodash');
 
 const webRoot = "../../nginx/webroot";
 // const webRoot = "TEMP/testindex";
@@ -44,7 +43,7 @@ function main() {
     return;
   }
 
-  var recipeBook = [];
+  var recipeBook = {};
 
   // open an index for writing, output to webroot dir
   var searchIndex = lunr(function () {
@@ -75,7 +74,7 @@ function main() {
       for( let recipe of recipes ) {
         this.add(recipe);
         if( recipe.name ) {
-          recipeBook.push(_.omit(recipe, 'content'));          
+          recipeBook[recipe.id] = recipe;
         }
       }
 
