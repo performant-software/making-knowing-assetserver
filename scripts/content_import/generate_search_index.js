@@ -1,29 +1,39 @@
 const fs = require('fs');
 const lunr = require('lunr');
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
+const _ = require('lodash');
 
 const webRoot = "../../nginx/webroot";
 // const webRoot = "TEMP/testindex";
 const folioDir = `${webRoot}/folio`;
 const searchIndexFile = `${webRoot}/search_index.js`;
+const recipeBookFile = `${webRoot}/recipe_book.js`;
 
+function parseFolio(html, folioID) {
+  let dom = new JSDOM(html);
+  let htmlDoc = dom.window.document;
 
-// returns transcription or null if unable to parse
-function parseTranscription(html) {
+  let folio = htmlDoc.querySelector('folio');
+  let recipeDivs = folio.children;
+  let recipes = [];
+  for (let i = 0; i < recipeDivs.length; i++) {
+    let recipeDiv = recipeDivs[i];
+    let id = recipeDiv.id;
+    if( id ) {
+      let headerElement = recipeDiv.querySelector("h2")
+      let name = ( headerElement ) ? headerElement.textContent : null;
+      let content = recipeDiv.textContent;
+      recipes.push({
+        id: id,
+        folioID: folioID,
+        name: name,
+        content: content
+      });
+    }
+  }
 
-  // pull transcription from folio element
-  let folioTag = "<folio";
-  let openDivIndex = html.indexOf(folioTag);
-  if (openDivIndex === -1) return null;
-  let start = html.indexOf(">", openDivIndex) + 1;
-  let end = html.lastIndexOf("</folio>");
-  if (end === -1) return null;
-  if (start >= end) return null;
-  let transcription = html.slice(start, end);
-
-  // drop tags in transcription
-  let content = transcription.replace(/<[^>]*>/g, '');
-
-  return content;
+  return recipes;
 }
 
 function main() {
@@ -34,9 +44,13 @@ function main() {
     return;
   }
 
+  var recipeBook = [];
+
   // open an index for writing, output to webroot dir
   var searchIndex = lunr(function () {
     this.ref('id')
+    this.field('folioID')
+    this.field('name')
     this.field('content')
     this.metadataWhitelist = ['position'];
 
@@ -57,21 +71,24 @@ function main() {
       // pull html from each of the three subfolders
       // index tc and tcn in french, tl in english
 
-      // grab just the contents of folio element and then strip all tags from that
-      let folioContent = parseTranscription(tlHTML);
-
-      let folioDocument = {
-        id: folio,
-        content: folioContent
+      let recipes = parseFolio(tlHTML,folio);
+      for( let recipe of recipes ) {
+        this.add(recipe);
+        if( recipe.name ) {
+          recipeBook.push(_.omit(recipe, 'content'));          
+        }
       }
-
-      this.add(folioDocument);
 
     }, this);
   });
 
   // write index to file
   fs.writeFile(searchIndexFile, JSON.stringify(searchIndex), (err) => {
+    if (err) throw err;
+  });
+
+  // write the recipe file
+  fs.writeFile(recipeBookFile, JSON.stringify(recipeBook), (err) => {
     if (err) throw err;
   });
 
