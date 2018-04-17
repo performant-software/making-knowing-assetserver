@@ -99,6 +99,12 @@ function searchEdition( searchTerm ) {
     return null;
   }
 
+  // make sure the recipe book exists
+  if( !fs.existsSync(recipeBookFile) ) {
+    console.log("Recipe book not found.");
+    return null;
+  }
+
   let searchIndexJSON = fs.readFileSync(searchIndexFile, "utf8");
   let searchIndex = lunr.Index.load(JSON.parse(searchIndexJSON));
   let recipeBook = JSON.parse(fs.readFileSync(recipeBookFile, "utf8"));
