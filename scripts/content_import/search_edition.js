@@ -115,4 +115,4 @@ function searchEdition( searchTerm ) {
   return recipes;
 }
 
-module.exports = { searchEdition: searchEdition, offsetToWordIndex: offsetToWordIndex };
+module.exports = searchEdition;
