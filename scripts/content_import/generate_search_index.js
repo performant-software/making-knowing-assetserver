@@ -1,19 +1,25 @@
 const fs = require('fs');
-const lunr = require('lunr');
+
+// load lunr with fr support
+var lunr = require('lunr');
+require("lunr-languages/lunr.stemmer.support")(lunr)
+require('lunr-languages/lunr.multi')(lunr)
+require("lunr-languages/lunr.fr")(lunr)
+
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-const webRoot = "../../nginx/webroot";
-// const webRoot = "TEMP/testindex";
-const folioDir = `${webRoot}/folio`;
-const searchIndexFile = `${webRoot}/search_index.js`;
-const recipeBookFile = `${webRoot}/recipe_book.js`;
+const searchIndexDir = "../../nginx/webroot/search-idx";
+const folioDir = "../../nginx/webroot/folio";
 
-function parseFolio(html, folioID) {
+function parseFolio(folioID, html) {
   let dom = new JSDOM(html);
   let htmlDoc = dom.window.document;
 
   let folio = htmlDoc.querySelector('folio');
+
+  if( folio === null ) return [];
+
   let recipeDivs = folio.children;
   let recipes = [];
   for (let i = 0; i < recipeDivs.length; i++) {
@@ -35,18 +41,13 @@ function parseFolio(html, folioID) {
   return recipes;
 }
 
-function main() {
-
-  // make sure the folio dir exists
-  if( !fs.existsSync(folioDir) ) {
-    console.log("Folio directory not found.");
-    return;
-  }
+function createSearchIndex( transcriptionType ) {
 
   var recipeBook = {};
 
-  // open an index for writing, output to webroot dir
+  // open an index for writing, output to searchIndexDir dir
   var searchIndex = lunr(function () {
+    this.use(lunr.multiLanguage('en', 'fr'))
     this.ref('id')
     this.field('folioID')
     this.field('name')
@@ -62,34 +63,49 @@ function main() {
       // ignore the manifest file
       if( folio.startsWith('manifest') ) return;
 
-      // get contents of folio file
-      // let tcHTML = fs.readFileSync(`${folioDir}/${folio}/tc/index.html`, "utf8");
-      let tlHTML = fs.readFileSync(`${folioDir}/${folio}/tl/index.html`, "utf8");
+      let folioHTMLFile = `${folioDir}/${folio}/${transcriptionType}/index.html`;
 
-      // TODO
-      // pull html from each of the three subfolders
-      // index tc and tcn in french, tl in english
-
-      let recipes = parseFolio(tlHTML,folio);
-      for( let recipe of recipes ) {
-        this.add(recipe);
-        if( recipe.name ) {
-          recipeBook[recipe.id] = recipe;
+      // make sure the folio file exists
+      if( fs.existsSync(folioHTMLFile) ) {
+        let html = fs.readFileSync( folioHTMLFile, "utf8");
+        let recipes = parseFolio(folio, html);
+        for( let recipe of recipes ) {
+          this.add(recipe);
+          if( recipe.name ) {
+            recipeBook[recipe.id] = recipe;
+          }
         }
       }
 
     }, this);
   });
 
+  let searchIndexFile = `${searchIndexDir}/${transcriptionType}_search_index.js`;
+  let recipeBookFile = `${searchIndexDir}/${transcriptionType}_recipe_book.js`;
+
   // write index to file
   fs.writeFile(searchIndexFile, JSON.stringify(searchIndex), (err) => {
     if (err) throw err;
   });
 
+
   // write the recipe file
   fs.writeFile(recipeBookFile, JSON.stringify(recipeBook), (err) => {
     if (err) throw err;
   });
+}
+
+function main() {
+
+  // make sure the folio dir exists
+  if( !fs.existsSync(folioDir) ) {
+    console.log("Folio directory not found.");
+    return;
+  }
+
+  createSearchIndex('tl');
+  createSearchIndex('tc');
+  createSearchIndex('tcn');
 
 }
 

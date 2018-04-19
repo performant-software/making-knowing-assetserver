@@ -5,12 +5,13 @@
 // searchEdition(searchTerm)
 
 const fs = require('fs');
-const lunr = require('lunr');
 
-const webRoot = "../../nginx/webroot";
-// const webRoot = "TEMP/testindex";
-const searchIndexFile = `${webRoot}/search_index.js`;
-const recipeBookFile = `${webRoot}/recipe_book.js`;
+var lunr = require('lunr');
+require("lunr-languages/lunr.stemmer.support")(lunr)
+require('lunr-languages/lunr.multi')(lunr)
+require("lunr-languages/lunr.fr")(lunr)
+
+const searchIndexDir = "../../nginx/webroot/search-idx";
 
 const MAX_FRAGMENT_LENGTH = 12;
 const HIGHLIGHT_START = '<span class="highlight">';
@@ -91,7 +92,10 @@ function createFragments( resultMetadata, fullText ) {
   return highlightedFragments;
 }
 
-function searchEdition( searchTerm ) {
+function searchEdition( searchTerm, transcriptionType ) {
+
+  let searchIndexFile = `${searchIndexDir}/${transcriptionType}_search_index.js`;
+  let recipeBookFile = `${searchIndexDir}/${transcriptionType}_recipe_book.js`;
 
   // make sure the folio dir exists
   if( !fs.existsSync(searchIndexFile) ) {
@@ -114,8 +118,10 @@ function searchEdition( searchTerm ) {
 
   for( let result of results ) {
     let recipe = recipeBook[ result.ref ];
-    let fragments = createFragments( result.matchData.metadata, recipe.content )
-    recipes.push( { name: recipe.name, folio: recipe.folioID, contextFragments: fragments } );
+    if( recipe ) {
+      let fragments = createFragments( result.matchData.metadata, recipe.content )
+      recipes.push( { name: recipe.name, folio: recipe.folioID, contextFragments: fragments } );
+    }
   }
 
   return recipes;
