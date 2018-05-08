@@ -2,5 +2,4 @@
 TEMP
 node_modules
 folio
-search_index.js
-recipe_book.js
+search-idx
