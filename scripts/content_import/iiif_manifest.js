@@ -54,7 +54,8 @@ function main() {
       }
 
       for( let i=0; i < 3; i++ ) {
-        resources[i+3]["resource"]["@id"] = `${transcriptionURLs[i]}/original.xml`;
+        // TODO: for now, need to use txt extension because the original xml is not actually valid xml
+        resources[i+3]["resource"]["@id"] = `${transcriptionURLs[i]}/original.txt`;
         resources[i+3]["on"] = annotationListURL;
       }
 

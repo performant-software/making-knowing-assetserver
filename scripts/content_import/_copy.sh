@@ -34,8 +34,9 @@ fi
 mkdir -p "$exportPath"
 
 # copy the original file to the folio folder
-cp "$INFILE" "$exportPath/original.xml"
+cp "$INFILE" "$exportPath/original.txt"
 
 # copy file to output folder for further processing
+# TODO: once this is valid XML, call it original.xml
 cp "$INFILE" "$OUTFILE"
-echo "copying $INFILE to $exportPath/original.xml"
+echo "copying $INFILE to $exportPath/original.txt"
