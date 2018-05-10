@@ -2,8 +2,8 @@
 
 # EDIT THESE
 ###########################################################################
-# GOOGLE_SHARE_NAME=__Manuscript\ Pages
-GOOGLE_SHARE_NAME=BnF\ Ms\ Fr\ 640/__Manuscript\ Pages
+GOOGLE_SHARE_NAME=__Manuscript\ Pages
+# GOOGLE_SHARE_NAME=BnF\ Ms\ Fr\ 640/__Manuscript\ Pages
 RCLONE_SOURCE_NAME=google
 
 DST_FOLIO="../nginx/webroot/folio"
