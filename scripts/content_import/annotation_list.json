@@ -33,6 +33,36 @@
         "format": "text/html"
       },
       "on": "annoList"
+    },
+    {
+      "@type": "oa:Annotation",
+      "motivation": "sc:painting",
+      "resource":{
+        "@id": "tc-xml",
+        "@type": "dctypes:Text",
+        "format": "text/xml"
+      },
+      "on": "annoList"
+    },
+    {
+      "@type": "oa:Annotation",
+      "motivation": "sc:painting",
+      "resource":{
+        "@id": "tcn-xml",
+        "@type": "dctypes:Text",
+        "format": "text/xml"
+      },
+      "on": "annoList"
+    },
+    {
+      "@type": "oa:Annotation",
+      "motivation": "sc:painting",
+      "resource":{
+        "@id": "tl-xml",
+        "@type": "dctypes:Text",
+        "format": "text/xml"
+      },
+      "on": "annoList"
     }
   ]
 }

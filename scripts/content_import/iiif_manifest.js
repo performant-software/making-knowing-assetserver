@@ -1,6 +1,7 @@
 const fs = require('fs');
 
-var iiifDomain = "http://edition-staging.makingandknowing.org"
+// var iiifDomain = "http://edition-staging.makingandknowing.org"
+var iiifDomain = "http://localhost:4000"
 var transcriptionDomain = "http://159.65.186.2"
 var folioPath = "/folio";
 var annotationListPath = "/bnf-ms-fr-640/list";
@@ -50,6 +51,11 @@ function main() {
       for( let i=0; i < 3; i++ ) {
         resources[i]["resource"]["@id"] = transcriptionURLs[i];
         resources[i]["on"] = annotationListURL;
+      }
+
+      for( let i=0; i < 3; i++ ) {
+        resources[i+3]["resource"]["@id"] = `${transcriptionURLs[i]}/original.xml`;
+        resources[i+3]["on"] = annotationListURL;
       }
 
       fs.writeFile(`TEMP/list/${fileName}`, JSON.stringify(annoList, null, 3), (err) => {
