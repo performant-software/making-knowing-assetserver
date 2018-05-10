@@ -2,7 +2,8 @@
 
 # EDIT THESE
 ###########################################################################
-GOOGLE_SHARE_NAME=__Manuscript\ Pages
+# GOOGLE_SHARE_NAME=__Manuscript\ Pages
+GOOGLE_SHARE_NAME=BnF\ Ms\ Fr\ 640/__Manuscript\ Pages
 RCLONE_SOURCE_NAME=google
 
 DST_FOLIO="../nginx/webroot/folio"
@@ -47,7 +48,7 @@ if [ -z "$1" ]; then
 	printf "================================================================\n\n"
 	INFOLDER="$RUNDIR/content_import/TEMP/input"
 	mkdir -p "$INFOLDER"
-	rclone --config="$RCLONE_CONFIG_FILE" -v --drive-shared-with-me sync "$RCLONE_SOURCE_NAME":"$GOOGLE_SHARE_NAME" "$INFOLDER"
+	rclone --drive-formats txt --config="$RCLONE_CONFIG_FILE" -v --drive-shared-with-me sync "$RCLONE_SOURCE_NAME":"$GOOGLE_SHARE_NAME" "$INFOLDER"
 
 # 1b.) SINGLE FILE
 else
@@ -70,10 +71,10 @@ mkdir -p "$OUTFOLDER"
 if [ "$BATCHMODE" = true ] ; then
 
 	# 2.) Extract the XML from out of the word documents in the folder
-	printf "$(date +"%m.%d.%Y @ %H:%M") : (DOCX -> XML)\n"
-	find "$INFOLDER" -name *.docx -type f -exec "$RUNDIR/content_import/_extract.sh" "$OUTFOLDER" {} \;
+	printf "$(date +"%m.%d.%Y @ %H:%M") : (TXT -> XML)\n"
+	find "$INFOLDER" -name *.txt -type f -exec "$RUNDIR/content_import/_copy.sh" "$OUTFOLDER" {} "$DST_FOLIO"  "$DST_UNKNOWN" \;
 	# touch the extract script to indicate last time it was run
-	touch "$RUNDIR/content_import/_extract.sh"
+	touch "$RUNDIR/content_import/_copy.sh"
 
 	# 3.) Convert the extracted files to our format
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
@@ -93,8 +94,8 @@ if [ "$BATCHMODE" = true ] ; then
 else
 
 	# 2.) Extract the XML from out of the word document
-	printf "$(date +"%m.%d.%Y @ %H:%M") : (DOCX -> XML)\n"
-	"$RUNDIR/content_import/_extract.sh" "$OUTFOLDER" "$INFILE"
+	printf "$(date +"%m.%d.%Y @ %H:%M") : (TXT -> XML)\n"
+	"$RUNDIR/content_import/_copy.sh" "$OUTFOLDER" "$INFILE"
 
 	# 3.) Convert the extracted files to our format
 	INFILE="$OUTFOLDER/$(basename "$(dirname "$INFILE")")/$(basename "$INFILE").xml"

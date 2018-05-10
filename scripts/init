@@ -7,7 +7,7 @@ echo "Marking all files ready for import..."
 
 
 # Mark the scripts "now"
-touch ./content_import/_extract.sh
+touch ./content_import/_copy.sh
 touch ./content_import/_convert.sh
 
 # Force brief sleep so that the dates on all the import files really are newer
