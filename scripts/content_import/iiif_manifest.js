@@ -1,7 +1,7 @@
 const fs = require('fs');
 
-// var iiifDomain = "http://edition-staging.makingandknowing.org"
-var iiifDomain = "http://localhost:4000"
+var iiifDomain = "http://edition-staging.makingandknowing.org"
+// var iiifDomain = "http://localhost:4000"
 var transcriptionDomain = "http://159.65.186.2"
 var folioPath = "/folio";
 var annotationListPath = "/bnf-ms-fr-640/list";
