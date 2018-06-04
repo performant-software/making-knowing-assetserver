@@ -134,10 +134,10 @@ for(var idx=0;idx<docparts.length;idx++){
 	}
 }
 
-// Strip all <figure> tags
-// Per https://github.com/cu-mkp/making-knowing-edition/issues/22, replace them with div
-xml = xml.replace(/<figure><id>([^<]+)/g, '<div class="figure" id=\"$1\"></div><figure><id>');
-xml = xml.replace(/<figure>.*<\/figure>/g, '');
+// // Strip all <figure> tags
+// // Per https://github.com/cu-mkp/making-knowing-edition/issues/22, replace them with div
+// xml = xml.replace(/<figure><id>([^<]+)/g, '<div class="figure" id=\"$1\"></div><figure><id>');
+// xml = xml.replace(/<figure>.*<\/figure>/g, '');
 
 // Beautify HTML
 if(f_beautify){
