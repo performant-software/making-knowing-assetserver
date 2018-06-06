@@ -1,22 +1,35 @@
 const fs = require('fs');
 
-var iiifDomain = "http://edition-staging.makingandknowing.org"
-// var iiifDomain = "http://localhost:4000"
-var transcriptionDomain = "http://159.65.186.2"
-var folioPath = "/folio";
-var annotationListPath = "/bnf-ms-fr-640/list";
-var outputDir = "TEMP";
+const devConfiguration = {
+  iiifDomain: "http://localhost:4000",
+  transcriptionDomain: "http://localhost:4000",
+  folioPath: "/bnf-ms-fr-640/folio",
+  listPath: "/list-dev",
+  manifestFilename: 'manifest-dev.json',
+  annotationListPath: "/bnf-ms-fr-640/list-dev"
+};
 
-function main() {
-  let manifestJSON = fs.readFileSync("bnf_manifest.json", "utf8");
+const prodConfigurion = {
+  iiifDomain: "http://edition.makingandknowing.org",
+  transcriptionDomain: "http://159.65.186.2",
+  folioPath: "/folio",
+  listPath: "/list",
+  manifestFilename: 'manifest.json',
+  annotationListPath: "/bnf-ms-fr-640/list"
+};
+
+const outputDir = "TEMP";
+
+function generate_iiif_files(config) {
+  let manifestJSON = fs.readFileSync(`${__dirname}/bnf_manifest.json`, "utf8");
   let manifest = JSON.parse(manifestJSON);
   let canvases = manifest["sequences"][0]["canvases"];
 
-  let annotationListJSON = fs.readFileSync("annotation_list.json", "utf8");
+  let annotationListJSON = fs.readFileSync(`${__dirname}/annotation_list.json`, "utf8");
   let blankAnnotationList = JSON.parse(annotationListJSON);
 
   // make dirs for output, if necessary
-  let listDir = outputDir+"/list";
+  let listDir = `${__dirname}/${outputDir}/${config.listPath}`;
   if( !fs.existsSync(outputDir) ) fs.mkdirSync(outputDir);
   if( !fs.existsSync(listDir) ) fs.mkdirSync(listDir);
 
@@ -25,8 +38,8 @@ function main() {
 
     if( folioID ) {
       let fileName = `${folioID}.json`;
-      let annotationListURL =  `${iiifDomain}${annotationListPath}/${fileName}`;
-      let folioURL = `${transcriptionDomain}${folioPath}/${folioID}`;
+      let annotationListURL =  `${config.iiifDomain}${config.annotationListPath}/${fileName}`;
+      let folioURL = `${config.transcriptionDomain}${config.folioPath}/${folioID}`;
 
       // Add this to the manifest canvas entries:
       // "otherContent" : [ {
@@ -59,21 +72,17 @@ function main() {
         resources[i+3]["on"] = annotationListURL;
       }
 
-      fs.writeFile(`TEMP/list/${fileName}`, JSON.stringify(annoList, null, 3), (err) => {
+      fs.writeFile(`${listDir}/${fileName}`, JSON.stringify(annoList, null, 3), (err) => {
         if (err) throw err;
       });
     }
   }
 
   // Write out the manifest that was created.
-  fs.writeFile('TEMP/manifest.json', JSON.stringify(manifest, null, 3), (err) => {
+  fs.writeFile(`${__dirname}/${outputDir}/${config.manifestFilename}`, JSON.stringify(manifest, null, 3), (err) => {
       if (err) {
         console.log(err);
-      } else {
-        // success case, the file was saved
-        console.log('IIIF Manifest created.');
-      };
-
+      } 
   });
 }
 
@@ -104,6 +113,12 @@ function generateFolioID( bnfLabel ) {
   return `p${zeros.concat(id)}${rectoOrVerso}`;
 }
 
+function main() {
+  generate_iiif_files(devConfiguration);
+  generate_iiif_files(prodConfigurion);
+
+  console.log('IIIF Manifests created.');
+}
 
 ///// RUN THE SCRIPT
 main();
