@@ -157,9 +157,18 @@ function convertFigure( htmlDoc, figure ) {
   return figDiv;
 }
 
+  // remove footnotes produced by Google Drive export to plain text
+function squashFootnotes(xml) {
+  // remove the footnote itself
+  xml = xml.replace(/^\[[a-z]\].*$/gm,'');
+  // remove the footnote marker from text body
+  return xml.replace(/\[[a-z]\]/gm,'');
+}
+
 function convert(xmlFilename) {
   // load the xml file into DOM
   let xml = fs.readFileSync(xmlFilename, "utf8");
+  xml = squashFootnotes(xml);
   let xmlDOM = new JSDOM(`<xml>${xml}</xml>`, { contentType: "text/xml" });
   let xmlDoc = xmlDOM.window.document;
 
