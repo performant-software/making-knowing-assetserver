@@ -4,6 +4,8 @@ const path = require('path');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
+const figuresDir = "/bnf-ms-fr-640/figures";
+
 const marginCodes = [
   'middle',
   'top',
@@ -16,6 +18,42 @@ const marginCodes = [
   'right-bottom'
 ];
 
+const convertToSpan =[  
+  'add',
+  'al',
+  'bp',
+  'cn',
+  'corr',
+  'cont',
+  'env',
+  'exp',
+  'fr',
+  'gap',
+  'df',
+  'gk',
+  'it',
+  'ill',
+  'la',
+  'ms',
+  'oc',
+  'pa',
+  'pl',
+  'pm',
+  'pn',
+  'pro',
+  'rub',
+  'sn',
+  'tl',
+  'tmp',
+  'unc',
+  'x' 
+];
+
+const filterOut = [
+  'id',
+  'margin'
+];
+                         
 function validLayoutCode( layoutCode ) {
   if( marginCodes.includes(layoutCode) ) {
     return layoutCode;
@@ -71,14 +109,52 @@ function findDataElement( parent, elementName ) {
   return null;
 }
 
-function findAndReplaceElementName( htmlDoc, parent, oldElementName, newElementName ) {
-  for( let child of parent.children ) {    
-    if( child.nodeName === oldElementName ) {
-      let newEl = htmlDoc.createElement(newElementName);
-      newEl.innerHTML = child.innerHTML;
-      child.replaceWith(newEl);
-    } 
+function findAndRemoveElement( parent, elementName ) {
+  let elements = parent.querySelectorAll( elementName );
+  for (let i = 0; i < elements.length; i++) {
+    var el = elements[i];  
+    el.remove();
   }
+}
+
+function findAndReplaceElementName( htmlDoc, parent, oldElementName, newElementName ) {
+  let elements = parent.querySelectorAll( oldElementName );
+  for (let i = 0; i < elements.length; i++) {
+    var el = elements[i];  
+    let newEl = htmlDoc.createElement(newElementName);
+    newEl.innerHTML = el.innerHTML;
+    el.replaceWith(newEl);
+  }
+}
+
+function convertAB( htmlDoc, ab ) {
+  let abDiv = htmlDoc.createElement('div');
+  abDiv.dataset.layout = validLayoutCode( findDataElement( ab, 'margin' ) );        
+  abDiv.innerHTML = ab.innerHTML;
+
+  findAndReplaceElementName( htmlDoc, abDiv, 'LB', 'BR' );
+  findAndReplaceElementName( htmlDoc, abDiv, 'DEL', 'S' );
+  
+  for( let tag of convertToSpan ) {
+    findAndReplaceElementName( htmlDoc, abDiv, tag, 'SPAN' );
+  }
+
+  // if( child.nodeName === 'm' ) {
+  // <Gloss side={side}
+  // term={term}>
+  //   {domToReact(domNode.children, parserOptions)}
+  // </Gloss>
+  // } 
+
+  return abDiv;
+}
+
+function convertFigure( htmlDoc, figure ) {
+  let figureID = findDataElement( figure, 'id' );
+  let figureURL = ( figureID ) ? `${figuresDir}/${figureID.substr(4)}.png` : null;  
+  let figDiv = htmlDoc.createElement('span');
+  figDiv.innerHTML = ( figureURL ) ?  `<img alt='' className='inline-figure' src='${figureURL}'/><br/></span>` : "<br/>";              
+  return figDiv;
 }
 
 function convert(xmlFilename) {
@@ -100,22 +176,25 @@ function convert(xmlFilename) {
 
     for( let child of div.children ) {
       if( child.nodeName === 'ab') {
-        let abDiv = htmlDoc.createElement('div');
-        abDiv.dataset.layout = validLayoutCode( findDataElement( child, 'margin' ) );        
-        abDiv.innerHTML = child.innerHTML;
-        findAndReplaceElementName( htmlDoc, abDiv, 'LB', 'BR' );
-        zoneDiv.appendChild(abDiv);
+        zoneDiv.appendChild( convertAB(htmlDoc, child) );
       } 
       else if( child.nodeName === 'figure' ) {
-        // TODO convert figures to divs
-      } else if( child.nodeName === 'head' ) {
+        zoneDiv.appendChild( convertFigure(htmlDoc, child) );
+      } 
+      else if( child.nodeName === 'head' ) {
         let h2Div = htmlDoc.createElement('h2');
         h2Div.innerHTML = child.innerHTML;
         zoneDiv.appendChild(h2Div);
-      }
-
-      // TODO convert cont 
+      } 
+      else if( child.nodeName === 'cont' ) {
+        // <span><i>Continued from the previous page..</i>  {domToReact(domNode.children, parserOptions)}</span>
+      }   
     }
+
+    // filter out certain tags
+    for( let tag of filterOut ) {
+      findAndRemoveElement( zoneDiv, tag );
+    }  
 
     // create a zone in the htmlDOM
     folio.appendChild(zoneDiv);
