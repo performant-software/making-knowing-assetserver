@@ -127,26 +127,29 @@ function findAndReplaceElementName( htmlDoc, parent, oldElementName, newElementN
   }
 }
 
-function convertAB( htmlDoc, ab ) {
-  let abDiv = htmlDoc.createElement('div');
-  abDiv.dataset.layout = validLayoutCode( findDataElement( ab, 'margin' ) );        
-  abDiv.innerHTML = ab.innerHTML;
+function convertPhraseLevelMarkup( htmlDoc, el, elementName ) {
+  let newEl = htmlDoc.createElement(elementName);
+  newEl.innerHTML = el.innerHTML;
 
-  findAndReplaceElementName( htmlDoc, abDiv, 'LB', 'BR' );
-  findAndReplaceElementName( htmlDoc, abDiv, 'DEL', 'S' );
+  findAndReplaceElementName( htmlDoc, newEl, 'LB', 'BR' );
+  findAndReplaceElementName( htmlDoc, newEl, 'DEL', 'S' );
   
   for( let tag of convertToSpan ) {
-    findAndReplaceElementName( htmlDoc, abDiv, tag, 'SPAN' );
+    findAndReplaceElementName( htmlDoc, newEl, tag, 'SPAN' );
   }
 
-  // if( child.nodeName === 'm' ) {
-  // <Gloss side={side}
-  // term={term}>
-  //   {domToReact(domNode.children, parserOptions)}
-  // </Gloss>
-  // } 
+  return newEl;
+}
 
+function convertAB( htmlDoc, ab ) {
+  let abDiv = convertPhraseLevelMarkup( htmlDoc, ab, 'div' );
+  abDiv.dataset.layout = validLayoutCode( findDataElement( ab, 'margin' ) );        
   return abDiv;
+}
+
+function convertHead( htmlDoc, head ) {
+  let h2Div = convertPhraseLevelMarkup( htmlDoc, head, 'h2' );
+  return h2Div;
 }
 
 function convertFigure( htmlDoc, figure ) {
@@ -191,9 +194,7 @@ function convert(xmlFilename) {
         zoneDiv.appendChild( convertFigure(htmlDoc, child) );
       } 
       else if( child.nodeName === 'head' ) {
-        let h2Div = htmlDoc.createElement('h2');
-        h2Div.innerHTML = child.innerHTML;
-        zoneDiv.appendChild(h2Div);
+        zoneDiv.appendChild( convertHead(htmlDoc, child) );
       } 
       else if( child.nodeName === 'cont' ) {
         // <span><i>Continued from the previous page..</i>  {domToReact(domNode.children, parserOptions)}</span>
