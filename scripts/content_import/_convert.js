@@ -162,6 +162,12 @@ function convertFigure( htmlDoc, figure ) {
   return figDiv;
 }
 
+function convertCont( htmlDoc, cont ) {
+  let contDiv = htmlDoc.createElement('div');
+  contDiv.innerHTML = "<i>Continued...</i>";
+  return contDiv;
+}
+
   // remove footnotes produced by Google Drive export to plain text
 function squashFootnotes(xml) {
   // remove the footnote itself
@@ -199,7 +205,7 @@ function convert(xmlFilename) {
         zoneDiv.appendChild( convertHead(htmlDoc, child) );
       } 
       else if( child.nodeName === 'cont' ) {
-        // <span><i>Continued from the previous page..</i>  {domToReact(domNode.children, parserOptions)}</span>
+        zoneDiv.appendChild( convertCont(htmlDoc, child) );
       }   
     }
 
