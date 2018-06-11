@@ -915,7 +915,7 @@
       "@type" : "sc:Canvas"
     }, {
       "@id" : "http://gallica.bnf.fr/iiif/ark:/12148/btv1b10500001g/canvas/f34",
-      "label" : "NP",
+      "label" : "14v",
       "height" : 5366,
       "width" : 3324,
       "images" : [ {
