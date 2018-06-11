@@ -9,8 +9,8 @@ require("lunr-languages/lunr.fr")(lunr)
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-const searchIndexDir = "../../nginx/webroot/search-idx";
-const folioDir = "../../nginx/webroot/folio";
+const searchIndexDir = "../nginx/webroot/search-idx";
+const folioDir = "../nginx/webroot/folio";
 
 function parseFolio(folioID, html) {
   let dom = new JSDOM(html);
