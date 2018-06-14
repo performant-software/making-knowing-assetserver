@@ -1,3 +1,4 @@
+const argv = require('yargs').argv;
 const fs = require('fs');
 
 // load lunr with fr support
@@ -9,8 +10,8 @@ require("lunr-languages/lunr.fr")(lunr)
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-const searchIndexDir = "../nginx/webroot/search-idx";
-const folioDir = "../nginx/webroot/folio";
+const searchIndexDir = "search-idx";
+const folioDir = "folio";
 
 function parseFolio(folioID, html) {
   let dom = new JSDOM(html);
@@ -41,7 +42,7 @@ function parseFolio(folioID, html) {
   return recipes;
 }
 
-function createSearchIndex( transcriptionType ) {
+function createSearchIndex( folioPath, indexPath, transcriptionType ) {
 
   var recipeBook = {};
 
@@ -54,7 +55,7 @@ function createSearchIndex( transcriptionType ) {
     this.field('content')
     this.metadataWhitelist = ['position'];
 
-    let folios = fs.readdirSync(folioDir);
+    let folios = fs.readdirSync(folioPath);
     folios.forEach( folio => {
 
       // ignore hidden directories
@@ -63,7 +64,7 @@ function createSearchIndex( transcriptionType ) {
       // ignore the manifest file
       if( folio.startsWith('manifest') ) return;
 
-      let folioHTMLFile = `${folioDir}/${folio}/${transcriptionType}/index.html`;
+      let folioHTMLFile = `${folioPath}/${folio}/${transcriptionType}/index.html`;
 
       // make sure the folio file exists
       if( fs.existsSync(folioHTMLFile) ) {
@@ -80,8 +81,8 @@ function createSearchIndex( transcriptionType ) {
     }, this);
   });
 
-  let searchIndexFile = `${searchIndexDir}/${transcriptionType}_search_index.js`;
-  let recipeBookFile = `${searchIndexDir}/${transcriptionType}_recipe_book.js`;
+  let searchIndexFile = `${indexPath}/${transcriptionType}_search_index.js`;
+  let recipeBookFile = `${indexPath}/${transcriptionType}_recipe_book.js`;
 
   // write index to file
   fs.writeFile(searchIndexFile, JSON.stringify(searchIndex), (err) => {
@@ -97,15 +98,31 @@ function createSearchIndex( transcriptionType ) {
 
 function main() {
 
+  // Params provided?
+  if ((typeof argv.dst === "undefined")) {
+    console.log("Usage: node generate_search_index.js --dst /path/to/index/dir");
+    process.exit();
+  }
+
+  let destDir = argv.dst;
+  let folioPath = `${destDir}/${folioDir}`
+  let indexPath = `${destDir}/${searchIndexDir}`
+
   // make sure the folio dir exists
-  if( !fs.existsSync(folioDir) ) {
+  if( !fs.existsSync(folioPath) ) {
     console.log("Folio directory not found.");
     return;
   }
 
-  createSearchIndex('tl');
-  createSearchIndex('tc');
-  createSearchIndex('tcn');
+  // make sure the index dir exists
+  if( !fs.existsSync(indexPath) ) {
+    console.log("Index directory not found.");
+    return;
+  }
+  
+  createSearchIndex(folioPath, indexPath, 'tl');
+  createSearchIndex(folioPath, indexPath, 'tc');
+  createSearchIndex(folioPath, indexPath, 'tcn');
 
 }
 

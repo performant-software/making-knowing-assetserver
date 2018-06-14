@@ -6,6 +6,7 @@ GOOGLE_SHARE_NAME=__Manuscript\ Pages
 # GOOGLE_SHARE_NAME=BnF\ Ms\ Fr\ 640/__Manuscript\ Pages
 RCLONE_SOURCE_NAME=google
 
+DST_WEBROOT="../nginx/webroot"
 DST_FOLIO="../nginx/webroot/folio"
 DST_UNKNOWN="../nginx/webroot/unknown"
 
@@ -92,7 +93,7 @@ if [ "$BATCHMODE" = true ] ; then
 
 	# 6.) Create a search index
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Creating search index...\n"
-	"node" "$RUNDIR/content_import/generate_search_index.js"
+	node  $RUNDIR/content_import/generate_search_index.js --dst $DST_WEBROOT
 
 # Operate on single file
 else
