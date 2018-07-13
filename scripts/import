@@ -74,13 +74,13 @@ if [ "$BATCHMODE" = true ] ; then
 	# 2.) Extract the XML from out of the word documents in the folder
 	printf "$(date +"%m.%d.%Y @ %H:%M") : (TXT -> XML)\n"
 	find "$INFOLDER" -name *.txt -type f -exec "$RUNDIR/content_import/_copy.sh" "$OUTFOLDER" {} "$DST_FOLIO"  "$DST_UNKNOWN" \;
-	touch the extract script to indicate last time it was run
+	# touch the extract script to indicate last time it was run
 	touch "$RUNDIR/content_import/_copy.sh"
 
 	# 3.) Convert the extracted files to our format
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
 	find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/content_import/_convert.sh" {} \;
-	touch the convert script to indicate last time it was run
+	# touch the convert script to indicate last time it was run
 	touch "$RUNDIR/content_import/_convert.sh"
 
 	# 4.) Organize everything into .../folio/FOLIO_ID/[tc|tcn|tl]
@@ -93,7 +93,7 @@ if [ "$BATCHMODE" = true ] ; then
 
 	# 6.) Create a search index
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Creating search index...\n"
-	node  $RUNDIR/content_import/generate_search_index.js --dst $DST_WEBROOT
+	node  $RUNDIR/content_import/generate_search_index.js --dst "$DST_WEBROOT"
 
 # Operate on single file
 else
