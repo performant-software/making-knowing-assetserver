@@ -1,4 +1,3 @@
-const argv = require('yargs').argv;
 const fs = require('fs');
 
 // load lunr with fr support
@@ -96,15 +95,8 @@ function createSearchIndex( folioPath, indexPath, transcriptionType ) {
   });
 }
 
-function main() {
+var generate = function generate(destDir) {
 
-  // Params provided?
-  if ((typeof argv.dst === "undefined")) {
-    console.log("Usage: node generate_search_index.js --dst /path/to/index/dir");
-    process.exit();
-  }
-
-  let destDir = argv.dst;
   let folioPath = `${destDir}/${folioDir}`
   let indexPath = `${destDir}/${searchIndexDir}`
 
@@ -123,8 +115,7 @@ function main() {
   createSearchIndex(folioPath, indexPath, 'tl');
   createSearchIndex(folioPath, indexPath, 'tc');
   createSearchIndex(folioPath, indexPath, 'tcn');
-
 }
 
-///// RUN THE SCRIPT
-main();
+// EXPORTS /////////////
+module.exports.generate = generate;

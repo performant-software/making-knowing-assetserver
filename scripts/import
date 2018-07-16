@@ -91,10 +91,6 @@ if [ "$BATCHMODE" = true ] ; then
 	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Creating manifest...\n"
 	"$RUNDIR/content_import/_generateManifest.sh" "$DST_FOLIO" "$DST_FOLIO/manifest.json"
 
-	# 6.) Create a search index
-	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Creating search index...\n"
-	node  $RUNDIR/content_import/generate_search_index.js --dst "$DST_WEBROOT"
-
 # Operate on single file
 else
 
