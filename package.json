@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "jsdom": "^11.6.2",
-    "lunr-languages": "^1.0.0"
-  }
-}

@@ -1,7 +1,7 @@
 {
-  "name": "convert",
+  "name": "making-knowing-assetserver",
   "version": "1.0.0",
-  "description": "- You might need [go](https://golang.org/doc/install?download=go1.10.darwin-amd64.tar.gz#uninstall) if you don't have it.",
+  "description": "",
   "main": "_convert.js",
   "dependencies": {
     "fpath": "^0.1.5",
@@ -11,7 +11,10 @@
     "path": "^0.12.7",
     "rename-keys": "^2.0.1",
     "xml2js": "^0.4.19",
-    "yargs": "^11.0.0"
+    "yargs": "^11.0.0",
+    "jsdom": "^11.6.2",
+    "lunr": "^2.1.6",
+    "lunr-languages": "^1.0.0"
   },
   "devDependencies": {},
   "scripts": {
