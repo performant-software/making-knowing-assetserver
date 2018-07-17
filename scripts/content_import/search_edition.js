@@ -11,6 +11,7 @@ require("lunr-languages/lunr.stemmer.support")(lunr)
 require('lunr-languages/lunr.multi')(lunr)
 require("lunr-languages/lunr.fr")(lunr)
 
+// const searchIndexDir = "nginx/webroot/search-idx";
 const searchIndexDir = "../../nginx/webroot/search-idx";
 
 const MAX_FRAGMENT_LENGTH = 12;
@@ -117,14 +118,21 @@ function searchEdition( searchTerm, transcriptionType ) {
   let recipes = [];
 
   for( let result of results ) {
-    let recipe = recipeBook[ result.ref ];
-    if( recipe ) {
-      let fragments = createFragments( result.matchData.metadata, recipe.content )
-      recipes.push( { name: recipe.name, folio: recipe.folioID, contextFragments: fragments } );
+    if( result.score > 0 ) {
+      let recipe = recipeBook[ result.ref ];
+      if( recipe ) {
+        let fragments = createFragments( result.matchData.metadata, recipe.content )
+        recipes.push( { name: recipe.name, folio: recipe.folioID, contextFragments: fragments } );
+      }  
     }
   }
 
   return recipes;
 }
 
+/// TEST ///
+// let result = searchEdition('halberd','tl')
+// console.log(result);
+
+// EXPORTS /////////////
 module.exports = searchEdition;
