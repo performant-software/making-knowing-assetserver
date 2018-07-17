@@ -19,14 +19,11 @@ const marginCodes = [
 ];
 
 const convertToSpan =[  
-  // 'add',
   'al',
   'bp',
   'cn',
-  // 'corr',
   'cont',
   'env',
-  // 'exp',
   'fr',
   'gap',
   'df',
@@ -41,7 +38,6 @@ const convertToSpan =[
   'pm',
   'pn',
   'pro',
-  // 'rub',
   'sn',
   'tl',
   'tmp',
