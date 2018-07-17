@@ -1,2 +1,2 @@
 echo "Starting Asset Server..."
-node ./content_import/asset_server.js
+node ./content_import/asset_server.js &
