@@ -11,8 +11,8 @@ require("lunr-languages/lunr.stemmer.support")(lunr)
 require('lunr-languages/lunr.multi')(lunr)
 require("lunr-languages/lunr.fr")(lunr)
 
-// const searchIndexDir = "nginx/webroot/search-idx";
-const searchIndexDir = "../../nginx/webroot/search-idx";
+const searchIndexDir = "nginx/webroot/search-idx";
+// const searchIndexDir = "../../nginx/webroot/search-idx";
 
 const MAX_FRAGMENT_LENGTH = 12;
 const HIGHLIGHT_START = '<span class="highlight">';
@@ -93,6 +93,11 @@ function createFragments( resultMetadata, fullText ) {
   return highlightedFragments;
 }
 
+function parseIDs( docID ) {
+  const parts = docID.split('-');
+  return { recipeID: parts[0], folioID: parts[1] };
+}
+
 function searchEdition( searchTerm, transcriptionType ) {
 
   let searchIndexFile = `${searchIndexDir}/${transcriptionType}_search_index.js`;
@@ -118,12 +123,11 @@ function searchEdition( searchTerm, transcriptionType ) {
   let recipes = [];
 
   for( let result of results ) {
-    if( result.score > 0 ) {
-      let recipe = recipeBook[ result.ref ];
-      if( recipe ) {
-        let fragments = createFragments( result.matchData.metadata, recipe.content )
-        recipes.push( { name: recipe.name, folio: recipe.folioID, contextFragments: fragments } );
-      }  
+    const { recipeID, folioID } = parseIDs( result.ref );
+    let recipe = recipeBook[ recipeID ];
+    if( recipe ) {
+      let fragments = createFragments( result.matchData.metadata, recipe.passages[folioID] )
+      recipes.push( { name: recipe.name, folio: folioID, contextFragments: fragments } );
     }
   }
 
@@ -131,8 +135,8 @@ function searchEdition( searchTerm, transcriptionType ) {
 }
 
 /// TEST ///
-// let result = searchEdition('halberd','tl')
-// console.log(result);
+let result = searchEdition('halberd','tl')
+console.log(result);
 
 // EXPORTS /////////////
 module.exports = searchEdition;

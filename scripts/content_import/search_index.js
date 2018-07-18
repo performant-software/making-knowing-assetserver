@@ -12,7 +12,7 @@ const { JSDOM } = jsdom;
 const searchIndexDir = "search-idx";
 const folioDir = "folio";
 
-function parseFolio(folioID, html) {
+function parseFolio(html) {
   let dom = new JSDOM(html);
   let htmlDoc = dom.window.document;
 
@@ -21,24 +21,23 @@ function parseFolio(folioID, html) {
   if( folio === null ) return [];
 
   let recipeDivs = folio.children;
-  let recipes = [];
+  let passages = [];
   for (let i = 0; i < recipeDivs.length; i++) {
     let recipeDiv = recipeDivs[i];
-    let id = recipeDiv.id;
-    if( id ) {
+    let recipeID = recipeDiv.id;
+    if( recipeID ) {
       let headerElement = recipeDiv.querySelector("h2")
       let name = ( headerElement ) ? headerElement.textContent : null;
       let content = recipeDiv.textContent;
-      recipes.push({
-        id: id,
-        folioID: folioID,
+      passages.push({
+        recipeID: recipeID,
         name: name,
         content: content
       });
     }
   }
 
-  return recipes;
+  return passages;
 }
 
 function createSearchIndex( folioPath, indexPath, transcriptionType ) {
@@ -49,31 +48,46 @@ function createSearchIndex( folioPath, indexPath, transcriptionType ) {
   var searchIndex = lunr(function () {
     this.use(lunr.multiLanguage('en', 'fr'))
     this.ref('id')
-    this.field('folioID')
-    this.field('name')
     this.field('content')
     this.metadataWhitelist = ['position'];
 
     let folios = fs.readdirSync(folioPath);
-    folios.forEach( folio => {
+    folios.forEach( folioID => {
 
       // ignore hidden directories
-      if( folio.startsWith('.') ) return;
+      if( folioID.startsWith('.') ) return;
 
       // ignore the manifest file
-      if( folio.startsWith('manifest') ) return;
+      if( folioID.startsWith('manifest') ) return;
 
-      let folioHTMLFile = `${folioPath}/${folio}/${transcriptionType}/index.html`;
+      let folioHTMLFile = `${folioPath}/${folioID}/${transcriptionType}/index.html`;
 
       // make sure the folio file exists
       if( fs.existsSync(folioHTMLFile) ) {
-        let html = fs.readFileSync( folioHTMLFile, "utf8");
-        let recipes = parseFolio(folio, html);
-        for( let recipe of recipes ) {
-          this.add(recipe);
-          if( recipe.name ) {
-            recipeBook[recipe.id] = recipe;
-          }
+        const html = fs.readFileSync( folioHTMLFile, "utf8");
+        const passages = parseFolio(html);
+
+        for( let passage of passages ) {
+          // create a search index document
+          const passageRecord = { 
+            id: `${passage.recipeID}-${folioID}`,
+            content: passage.content
+          };
+
+          // add record to lunr index
+          this.add( passageRecord );
+
+          let recipe = recipeBook[passage.recipeID];
+          if( !recipe ) {
+            // create a new recipe entry
+            recipe = {
+              id: passage.recipeID,
+              passages: {} 
+            };
+            recipeBook[passage.recipeID] = recipe;
+          } 
+          if( passage.name ) recipe.name = passage.name;
+          recipe.passages[folioID] = passageRecord.content;
         }
       }
 
