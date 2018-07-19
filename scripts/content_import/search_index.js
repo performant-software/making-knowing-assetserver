@@ -82,6 +82,7 @@ function createSearchIndex( folioPath, indexPath, transcriptionType ) {
             // create a new recipe entry
             recipe = {
               id: passage.recipeID,
+              name: 'ERROR: Unable to parse name.',
               passages: {} 
             };
             recipeBook[passage.recipeID] = recipe;
@@ -98,13 +99,13 @@ function createSearchIndex( folioPath, indexPath, transcriptionType ) {
   let recipeBookFile = `${indexPath}/${transcriptionType}_recipe_book.js`;
 
   // write index to file
-  fs.writeFile(searchIndexFile, JSON.stringify(searchIndex), (err) => {
+  fs.writeFileSync(searchIndexFile, JSON.stringify(searchIndex), (err) => {
     if (err) throw err;
   });
 
 
   // write the recipe file
-  fs.writeFile(recipeBookFile, JSON.stringify(recipeBook), (err) => {
+  fs.writeFileSync(recipeBookFile, JSON.stringify(recipeBook), (err) => {
     if (err) throw err;
   });
 }

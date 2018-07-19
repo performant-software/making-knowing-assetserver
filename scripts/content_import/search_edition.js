@@ -1,9 +1,3 @@
-
-// TEST module for trying out search index
-// run node and then:
-// const searchEdition = require('./search_edition.js')
-// searchEdition(searchTerm)
-
 const fs = require('fs');
 
 var lunr = require('lunr');
@@ -11,8 +5,7 @@ require("lunr-languages/lunr.stemmer.support")(lunr)
 require('lunr-languages/lunr.multi')(lunr)
 require("lunr-languages/lunr.fr")(lunr)
 
-const searchIndexDir = "nginx/webroot/search-idx";
-// const searchIndexDir = "../../nginx/webroot/search-idx";
+const searchIndexDir = "./nginx/webroot/search-idx";
 
 const MAX_FRAGMENT_LENGTH = 12;
 const HIGHLIGHT_START = '<span class="highlight">';
@@ -98,7 +91,7 @@ function parseIDs( docID ) {
   return { recipeID: parts[0], folioID: parts[1] };
 }
 
-function searchEdition( searchTerm, transcriptionType ) {
+function search( searchTerm, transcriptionType ) {
 
   let searchIndexFile = `${searchIndexDir}/${transcriptionType}_search_index.js`;
   let recipeBookFile = `${searchIndexDir}/${transcriptionType}_recipe_book.js`;
@@ -134,9 +127,5 @@ function searchEdition( searchTerm, transcriptionType ) {
   return recipes;
 }
 
-/// TEST ///
-let result = searchEdition('halberd','tl')
-console.log(result);
-
 // EXPORTS /////////////
-module.exports = searchEdition;
+module.exports.search = search;
