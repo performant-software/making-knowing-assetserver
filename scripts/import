@@ -78,18 +78,18 @@ if [ "$BATCHMODE" = true ] ; then
 	touch "$RUNDIR/content_import/_copy.sh"
 
 	# 3.) Convert the extracted files to our format
-	printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
-	find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/content_import/_convert.sh" {} \;
-	# touch the convert script to indicate last time it was run
-	touch "$RUNDIR/content_import/_convert.sh"
+	# printf "\n$(date +"%m.%d.%Y @ %H:%M") : (XML -> HTML)\n"
+	# find "$OUTFOLDER" -name *.xml -type f -exec "$RUNDIR/content_import/_convert.sh" {} \;
+	# # touch the convert script to indicate last time it was run
+	# touch "$RUNDIR/content_import/_convert.sh"
 
 	# 4.) Organize everything into .../folio/FOLIO_ID/[tc|tcn|tl]
-	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Sorting files...\n"
-	find "$RUNDIR/content_import/TEMP/output" -name *.html -type f -exec "$RUNDIR/content_import/_sort.sh" "$DST_FOLIO" "$DST_UNKNOWN" {} \;
+	# printf "\n$(date +"%m.%d.%Y @ %H:%M") : Sorting files...\n"
+	# find "$RUNDIR/content_import/TEMP/output" -name *.html -type f -exec "$RUNDIR/content_import/_sort.sh" "$DST_FOLIO" "$DST_UNKNOWN" {} \;
 
 	# 5.) Create /folio/manifest.json
-	printf "\n$(date +"%m.%d.%Y @ %H:%M") : Creating manifest...\n"
-	"$RUNDIR/content_import/_generateManifest.sh" "$DST_FOLIO" "$DST_FOLIO/manifest.json"
+	# printf "\n$(date +"%m.%d.%Y @ %H:%M") : Creating manifest...\n"
+	# "$RUNDIR/content_import/_generateManifest.sh" "$DST_FOLIO" "$DST_FOLIO/manifest.json"
 
 # Operate on single file
 else

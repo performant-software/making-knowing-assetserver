@@ -9,9 +9,6 @@ require("lunr-languages/lunr.fr")(lunr)
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-const searchIndexDir = "search-idx";
-const folioDir = "folio";
-
 function parseFolio(html) {
   let dom = new JSDOM(html);
   let htmlDoc = dom.window.document;
@@ -110,23 +107,7 @@ function createSearchIndex( folioPath, indexPath, transcriptionType ) {
   });
 }
 
-var generate = function generate(destDir) {
-
-  let folioPath = `${destDir}/${folioDir}`
-  let indexPath = `${destDir}/${searchIndexDir}`
-
-  // make sure the folio dir exists
-  if( !fs.existsSync(folioPath) ) {
-    console.log("Folio directory not found.");
-    return;
-  }
-
-  // make sure the index dir exists
-  if( !fs.existsSync(indexPath) ) {
-    console.log("Index directory not found.");
-    return;
-  }
-  
+var generate = function generate(folioPath,indexPath) {  
   createSearchIndex(folioPath, indexPath, 'tl');
   createSearchIndex(folioPath, indexPath, 'tc');
   createSearchIndex(folioPath, indexPath, 'tcn');
