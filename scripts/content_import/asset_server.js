@@ -1,6 +1,11 @@
+const fs = require('fs');
+
 const searchIndex = require('./search_index');
 const convert = require('./convert');
-const fs = require('fs');
+
+function copyFolioXMLs( inputDir, folioPath ) {
+  // TODO
+}
 
 function dirExists( dir ) {
   if( !fs.existsSync(dir) ) {
@@ -15,18 +20,22 @@ function dirExists( dir ) {
 
 function main() {
 
-  // make sure the folio dir exists
+  // make sure the necessary dirs exist
+  const inputDir = 'scripts/content_import/TEMP/input';
   const folioPath = 'nginx/webroot/folio';
   const searchIndexPath = 'nginx/webroot/search-idx';
-  if( !dirExists(folioPath) || !dirExists(searchIndexPath) ) {
+  if( !fs.existsSync(inputDir) || !dirExists(folioPath) || !dirExists(searchIndexPath) ) {
+    console.log('Unable to start asset server.');
     return;
   }
 
-  // convert all the folios
-  console.log('Converting folios...');
-  // convert.convertFolios(folioPath);
+  console.log('Copy all the folios to the web directory...');
+  copyFolioXMLs( inputDir, folioPath )
 
-  console.log('Generating Search Index...');
+  console.log('Convert folios to HTML...');
+  convert.convertFolios(folioPath);
+
+  console.log('Generate Search Index...');
   searchIndex.generate(folioPath, searchIndexPath);
 }
 
