@@ -102,7 +102,7 @@ async function main() {
   console.log('Generate Search Index...');
   searchIndex.generate(folioPath, searchIndexPath);
 
-  await sleep(nextInterval());
+  // await sleep(nextInterval());
 }
 
 main();
