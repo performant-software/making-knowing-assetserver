@@ -18,9 +18,9 @@ const stagingConfiguration = {
   annotationListPath: "/bnf-ms-fr-640/list-staging"
 };
 
-const prodConfigurion = {
-  iiifDomain: "http://edition.makingandknowing.org",
-  transcriptionDomain: "http://159.65.186.2",
+const prodConfiguration = {
+  iiifDomain: "http://edition-staging.makingandknowing.org",
+  transcriptionDomain: "http://209.97.145.244",
   folioPath: "/folio",
   listPath: "/list",
   manifestFilename: 'manifest.json',
@@ -134,8 +134,8 @@ function generateFolioID( bnfLabel ) {
 function main() {
   // generate_iiif_files(devConfiguration);
   // generate_iiif_files(stagingConfiguration);
-  // generate_iiif_files(prodConfigurion);
-  generate_iiif_files(prodConfiguration2);
+  generate_iiif_files(prodConfiguration);
+  // generate_iiif_files(prodConfiguration2);
 
   console.log('IIIF Manifests created.');
 }
