@@ -5,8 +5,8 @@ const searchIndex = require('./search_index');
 const convert = require('./convert');
 
 const waitTimeLengthMins = 1;
-// const googleShareName="\"__Manuscript\ Pages\"";
-const googleShareName="\"BnF\ Ms\ Fr\ 640/__Manuscript\ Pages\"";
+const googleShareName="\"__Manuscript\ Pages\"";
+// const googleShareName="\"BnF\ Ms\ Fr\ 640/__Manuscript\ Pages\"";
 // const rcloneConfigFile="/root/.config/rclone/rclone.conf";
 
 const transcriptionTypes = [
