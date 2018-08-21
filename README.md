@@ -31,7 +31,7 @@ cd scripts/content_import
 yarn install
 ```
 
-3. Install the pm2 process manager: 
+3. Install the [pm2](https://pm2.io/) process manager: 
 
 ```
 cd ../..
