@@ -23,6 +23,16 @@ function downloadFiles(inputDir) {
   });  
 }
 
+function clearLogFile() {
+  execSync(`rm nginx/webroot/logfile.txt`, (error, stdout, stderr) => {
+    console.log(`${stdout}`);
+    console.log(`${stderr}`);
+    if (error !== null) {
+        console.log(`exec error: ${error}`);
+    }
+  });  
+}
+
 function copyFolioXMLs( sourcePath, folioPath ) {
   const inputDir = fs.readdirSync(sourcePath);
   inputDir.forEach( folioFolder => {
@@ -102,7 +112,7 @@ async function main() {
   console.log('Generate Search Index...');
   searchIndex.generate(folioPath, searchIndexPath);
 
-  // await sleep(nextInterval());
+  clearLogFile();
 }
 
 main();

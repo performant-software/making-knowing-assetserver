@@ -27,6 +27,15 @@ const prodConfigurion = {
   annotationListPath: "/bnf-ms-fr-640/list"
 };
 
+const prodConfiguration2 = {
+  iiifDomain: "http://localhost:4000",
+  transcriptionDomain: "http://209.97.145.244",
+  folioPath: "/folio",
+  listPath: "/list-dev",
+  manifestFilename: 'manifest-dev.json',
+  annotationListPath: "/bnf-ms-fr-640/list-dev"
+};
+
 const outputDir = "TEMP";
 
 function generate_iiif_files(config) {
@@ -123,9 +132,10 @@ function generateFolioID( bnfLabel ) {
 }
 
 function main() {
-  generate_iiif_files(devConfiguration);
-  generate_iiif_files(stagingConfiguration);
-  generate_iiif_files(prodConfigurion);
+  // generate_iiif_files(devConfiguration);
+  // generate_iiif_files(stagingConfiguration);
+  // generate_iiif_files(prodConfigurion);
+  generate_iiif_files(prodConfiguration2);
 
   console.log('IIIF Manifests created.');
 }
