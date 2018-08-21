@@ -29,15 +29,20 @@ rclone config
 ```
 cd scripts/content_import
 yarn install
+```
 
 3. Install the pm2 process manager: 
+
 ```
 cd ../..
 yarn global add pm2
+```
 
 4. Start the process manager from the base directory of the project:
 
+```
 pm2 start
+```
 
 Setup Notes
 ------------
@@ -46,9 +51,11 @@ To make the process manager automatically restart on system start:
 
 ```
 pm2 startup
+```
 
 To undo this:
 
-````
+```
 pm2 unstartup systemd
+```
 
