@@ -19,7 +19,7 @@ const stagingConfiguration = {
 };
 
 const prodConfiguration = {
-  iiifDomain: "http://edition-staging.makingandknowing.org",
+  iiifDomain: "http://edition.makingandknowing.org",
   transcriptionDomain: "http://209.97.145.244",
   folioPath: "/folio",
   listPath: "/list",
