@@ -177,11 +177,6 @@ function squashFootnotes(xml) {
 }
 
 function convertXML(xml, fileID) {
-  if( fileID === 'tc_p094v') {
-    // for debugging prob with squasher
-    console.log('break');
-  }
-
   xml = squashFootnotes(xml);
   let xmlDOM = new JSDOM(`<xml>${xml}</xml>`, { contentType: "text/xml" });
   let xmlDoc = xmlDOM.window.document;

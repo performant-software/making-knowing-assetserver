@@ -1,13 +1,27 @@
 const fs = require('fs');
+const { execSync } = require('child_process');
 
 const searchIndex = require('./search_index');
 const convert = require('./convert');
 
 const waitTimeLengthMins = 1;
+// const googleShareName="\"__Manuscript\ Pages\"";
+const googleShareName="\"BnF\ Ms\ Fr\ 640/__Manuscript\ Pages\"";
+// const rcloneConfigFile="/root/.config/rclone/rclone.conf";
 
 const transcriptionTypes = [
   'tc', 'tcn', 'tl'
 ];
+
+function downloadFiles(inputDir) {
+  execSync(`rclone --drive-formats txt -v --drive-shared-with-me sync google:${googleShareName} ${inputDir}`, (error, stdout, stderr) => {
+    console.log(`${stdout}`);
+    console.log(`${stderr}`);
+    if (error !== null) {
+        console.log(`exec error: ${error}`);
+    }
+  });  
+}
 
 function copyFolioXMLs( sourcePath, folioPath ) {
   const inputDir = fs.readdirSync(sourcePath);
@@ -76,7 +90,8 @@ async function main() {
   const now = new Date();
   console.log( `Asset Pipeline started at: ${now.toString()}`);
 
-  console.log('TODO Load remote source...');
+  console.log('Download files from Google Drive...');
+  downloadFiles(inputDir);
 
   console.log('Copy all the folios to the web directory...');
   copyFolioXMLs( inputDir, folioPath )
