@@ -3,8 +3,41 @@ const fs = require('fs');
 const searchIndex = require('./search_index');
 const convert = require('./convert');
 
-function copyFolioXMLs( inputDir, folioPath ) {
-  // TODO
+const waitTimeLengthMins = 1;
+
+const transcriptionTypes = [
+  'tc', 'tcn', 'tl'
+];
+
+function copyFolioXMLs( sourcePath, folioPath ) {
+  const inputDir = fs.readdirSync(sourcePath);
+  inputDir.forEach( folioFolder => {
+    // ignore hidden directories
+    if( folioFolder.startsWith('.') ) return;
+
+    // extract the folio ID from the folder name
+    const matches = folioFolder.match(/p[0-9]{3}[vr]/);
+    const folioID = matches ? matches[0] : null;
+
+    if( folioID ) {
+      const targetDir = `${folioPath}/${folioID}`;
+  
+      // create a dir for folio if necessary
+      if( dirExists(targetDir) ) {
+        transcriptionTypes.forEach( transcriptionType => {
+          const sourceFile = `${sourcePath}/${folioFolder}/${transcriptionType}_${folioID}.txt`;
+          const ttDir = `${targetDir}/${transcriptionType}`;
+          // always create the dir even if source file not found.
+          if( dirExists(ttDir) ) {
+            if( fs.existsSync(sourceFile) ) {
+              const targetFile = `${ttDir}/original.txt`;            
+              fs.copyFileSync(sourceFile, targetFile);
+            }
+          }
+        });
+      }  
+    }
+  });
 }
 
 function dirExists( dir ) {
@@ -18,7 +51,18 @@ function dirExists( dir ) {
   return true;
 }
 
-function main() {
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function nextInterval() {
+    const now = new Date();
+    const nextIntervalMins = waitTimeLengthMins - (now.getMinutes() % waitTimeLengthMins);
+    const nextIntervalMs = (nextIntervalMins * 60) * 1000;
+    return nextIntervalMs;
+}
+
+async function main() {
 
   // make sure the necessary dirs exist
   const inputDir = 'scripts/content_import/TEMP/input';
@@ -29,6 +73,11 @@ function main() {
     return;
   }
 
+  const now = new Date();
+  console.log( `Asset Pipeline started at: ${now.toString()}`);
+
+  console.log('TODO Load remote source...');
+
   console.log('Copy all the folios to the web directory...');
   copyFolioXMLs( inputDir, folioPath )
 
@@ -37,29 +86,8 @@ function main() {
 
   console.log('Generate Search Index...');
   searchIndex.generate(folioPath, searchIndexPath);
+
+  await sleep(nextInterval());
 }
 
 main();
-
-// const waitTimeLengthMins = 20;
-
-// function sleep(ms) {
-//     return new Promise(resolve => setTimeout(resolve, ms));
-// }
-
-// function nextInterval() {
-//     const now = new Date();
-//     console.log( `time: ${now.toString()}`);
-//     const nextIntervalMins = waitTimeLengthMins - (now.getMinutes() % waitTimeLengthMins);
-//     const nextIntervalMs = (nextIntervalMins * 60) * 1000;
-//     return nextIntervalMs;
-// }
-  
-// async function main() {
-//     while(true) {
-//         console.log('Generating Search Index...');
-//         searchIndex.generate('../nginx/webroot');    
-//         await sleep(nextInterval());
-//     }
-// }
-  

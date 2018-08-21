@@ -168,7 +168,7 @@ function convertCont( htmlDoc, cont ) {
   return contDiv;
 }
 
-  // remove footnotes produced by Google Drive export to plain text
+// remove footnotes produced by Google Drive export to plain text
 function squashFootnotes(xml) {
   // remove the footnote itself
   xml = xml.replace(/^\[[a-z]\].*$/gm,'');
@@ -176,13 +176,18 @@ function squashFootnotes(xml) {
   return xml.replace(/\[[a-z]\]/gm,'');
 }
 
-function convertXML(xml, title) {
+function convertXML(xml, fileID) {
+  if( fileID === 'tc_p094v') {
+    // for debugging prob with squasher
+    console.log('break');
+  }
+
   xml = squashFootnotes(xml);
   let xmlDOM = new JSDOM(`<xml>${xml}</xml>`, { contentType: "text/xml" });
   let xmlDoc = xmlDOM.window.document;
 
   // create a parallel HTML DOM and move elements from xml dom to html
-  let htmlDOM = new JSDOM( htmlTemplate(title) );
+  let htmlDOM = new JSDOM( htmlTemplate(fileID) );
   let htmlDoc = htmlDOM.window.document;
 
   let folio = htmlDoc.querySelector('folio');
@@ -219,15 +224,23 @@ function convertXML(xml, title) {
   return htmlDOM.serialize();
 }
 
-function convertFile( folioID, xmlFile, htmlFile ) {
-  // try to convert XMLFile
+function convertFile( folioID, transcriptionType, xmlFile, htmlFile ) {
+  const fileID = `${transcriptionType}_${folioID}`;
+  if( !fs.existsSync(xmlFile) ) {
+    const err = `Transcription file not found: ${fileID}`;
+    fs.writeFileSync(htmlFile, errorMessage(err));
+    console.log(err);
+    return;
+  }
+
   try {
-    console.log(`convert: ${htmlFile}`);
     const xml = fs.readFileSync( xmlFile, "utf8");
-    const html = convertXML(xml,folioID);
+    const html = convertXML(xml,fileID);
     fs.writeFileSync(htmlFile, html);
   } catch (err) {
-    console.log(err);
+    const errorMsg = errorMessage(err.toString());
+    fs.writeFileSync(htmlFile, errorMsg);
+    console.log(`Error converting: ${fileID}`);
   }
 }
 
@@ -243,7 +256,7 @@ function convertFolios( folioPath ) {
     transcriptionTypes.forEach( transcriptionType => {
       const folioOriginalXML = `${folioPath}/${folioID}/${transcriptionType}/original.txt`;
       const folioHTML = `${folioPath}/${folioID}/${transcriptionType}/index.html`;
-      convertFile(folioID, folioOriginalXML, folioHTML);
+      convertFile(folioID, transcriptionType, folioOriginalXML, folioHTML);
     });
   });
 }

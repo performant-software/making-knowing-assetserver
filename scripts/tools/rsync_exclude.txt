@@ -1,9 +1,0 @@
-+*
-.*
-tools
-rsync_exclude.txt
-.git
-README.md
-folio
-unknown
-TEMP
