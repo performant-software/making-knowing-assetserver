@@ -2,20 +2,11 @@ const fs = require('fs');
 
 const devConfiguration = {
   iiifDomain: "http://localhost:4000",
-  transcriptionDomain: "http://localhost:4000",
-  folioPath: "/bnf-ms-fr-640/folio",
-  listPath: "/list-dev",
+  transcriptionDomain: "http://209.97.145.244",
+  folioPath: "/folio",
+  listPath: "/list",
   manifestFilename: 'manifest-dev.json',
-  annotationListPath: "/bnf-ms-fr-640/list-dev"
-};
-
-const stagingConfiguration = {
-  iiifDomain: "http://edition-staging.makingandknowing.org",
-  transcriptionDomain: "http://edition-staging.makingandknowing.org",
-  folioPath: "/bnf-ms-fr-640/folio",
-  listPath: "/list-staging",
-  manifestFilename: 'manifest-staging.json',
-  annotationListPath: "/bnf-ms-fr-640/list-staging"
+  annotationListPath: "/bnf-ms-fr-640/list"
 };
 
 const prodConfiguration = {
@@ -27,14 +18,23 @@ const prodConfiguration = {
   annotationListPath: "/bnf-ms-fr-640/list"
 };
 
-const prodConfiguration2 = {
-  iiifDomain: "http://localhost:4000",
+const stagingConfiguration = {
+  iiifDomain: "http://edition-staging.makingandknowing.org",
   transcriptionDomain: "http://209.97.145.244",
   folioPath: "/folio",
-  listPath: "/list-dev",
-  manifestFilename: 'manifest-dev.json',
-  annotationListPath: "/bnf-ms-fr-640/list-dev"
+  listPath: "/list",
+  manifestFilename: 'manifest-staging.json',
+  annotationListPath: "/bnf-ms-fr-640/list"
 };
+
+// const prodConfiguration2 = {
+//   iiifDomain: "http://localhost:4000",
+//   transcriptionDomain: "http://209.97.145.244",
+//   folioPath: "/folio",
+//   listPath: "/list-dev",
+//   manifestFilename: 'manifest-dev.json',
+//   annotationListPath: "/bnf-ms-fr-640/list-dev"
+// };
 
 const outputDir = "TEMP";
 
@@ -132,8 +132,8 @@ function generateFolioID( bnfLabel ) {
 }
 
 function main() {
-  // generate_iiif_files(devConfiguration);
-  // generate_iiif_files(stagingConfiguration);
+  generate_iiif_files(devConfiguration);
+  generate_iiif_files(stagingConfiguration);
   generate_iiif_files(prodConfiguration);
   // generate_iiif_files(prodConfiguration2);
 

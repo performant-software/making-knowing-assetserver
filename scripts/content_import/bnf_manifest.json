@@ -5530,7 +5530,7 @@
         "@type" : "sc:Canvas"
       }, {
         "@id" : "https://gallica.bnf.fr/iiif/ark:/12148/btv1b10500001g/canvas/f212",
-        "label" : "130v",
+        "label" : "103v",
         "height" : 5357,
         "width" : 3249,
         "images" : [ {
