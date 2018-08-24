@@ -2,11 +2,11 @@ const fs = require('fs');
 
 const devConfiguration = {
   iiifDomain: "http://localhost:4000",
-  transcriptionDomain: "http://209.97.145.244",
-  folioPath: "/folio",
-  listPath: "/list",
+  transcriptionDomain: "http://localhost:4000",
+  folioPath: "/bnf-ms-fr-640/folio",
+  listPath: "/list-dev",
   manifestFilename: 'manifest-dev.json',
-  annotationListPath: "/bnf-ms-fr-640/list"
+  annotationListPath: "/bnf-ms-fr-640/list-dev"
 };
 
 const prodConfiguration = {

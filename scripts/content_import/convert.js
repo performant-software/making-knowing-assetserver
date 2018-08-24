@@ -1,4 +1,3 @@
-const argv = require('yargs').argv;
 const fs = require('fs');
 const path = require('path');
 const jsdom = require("jsdom");
@@ -22,10 +21,18 @@ const marginCodes = [
   'right-bottom'
 ];
 
+const hintCodes = [
+  'tall',
+  'extra-tall',
+  'wide',
+  'extra-wide'
+];
+
 const convertToSpan =[
   'al',
   'bp',
   'cn',
+  'comment',
   'cont',
   'env',
   'fr',
@@ -36,6 +43,7 @@ const convertToSpan =[
   'ill',
   'la',
   'ms',
+  'mu',
   'oc',
   'pa',
   'pl',
@@ -51,7 +59,8 @@ const convertToSpan =[
 
 const filterOut = [
   'id',
-  'margin'
+  'margin',
+  'render'
 ];
 
 function validLayoutCode( layoutCode ) {
@@ -61,6 +70,14 @@ function validLayoutCode( layoutCode ) {
     return 'middle';
   }
 };
+
+function validLayoutHint( layoutHint ) {
+  if( hintCodes.includes(layoutHint) ) {
+    return layoutHint;
+  } else {
+    return null;
+  }
+}
 
 function htmlTemplate(xmlFilename) {
   // set title to the folio id
@@ -144,6 +161,10 @@ function convertPhraseLevelMarkup( htmlDoc, el, elementName ) {
 function convertAB( htmlDoc, ab ) {
   let abDiv = convertPhraseLevelMarkup( htmlDoc, ab, 'div' );
   abDiv.dataset.layout = validLayoutCode( findDataElement( ab, 'margin' ) );
+  const layoutHint = validLayoutHint( findDataElement( ab, 'render') );
+  if( layoutHint ) {
+    abDiv.dataset.layoutHint = layoutHint;
+  }
   return abDiv;
 }
 

@@ -5,9 +5,8 @@ const searchIndex = require('./search_index');
 const convert = require('./convert');
 
 const waitTimeLengthMins = 1;
-const googleShareName="\"__Manuscript\ Pages\"";
-// const googleShareName="\"BnF\ Ms\ Fr\ 640/__Manuscript\ Pages\"";
-// const rcloneConfigFile="/root/.config/rclone/rclone.conf";
+// const googleShareName="\"__Manuscript\ Pages\"";
+const googleShareName="\"BnF\ Ms\ Fr\ 640/__Manuscript\ Pages\"";
 
 const transcriptionTypes = [
   'tc', 'tcn', 'tl'
@@ -24,7 +23,9 @@ function downloadFiles(inputDir) {
 }
 
 function clearLogFile() {
-  execSync(`rm nginx/webroot/logfile.txt`, (error, stdout, stderr) => {
+  const logFile = "nginx/webroot/logfile.txt";
+  if( fs.existsSync(logFile) )
+  execSync(`rm ${logFile}`, (error, stdout, stderr) => {
     console.log(`${stdout}`);
     console.log(`${stderr}`);
     if (error !== null) {
@@ -97,22 +98,24 @@ async function main() {
     return;
   }
 
+  // Start fresh each run
+  clearLogFile();
+
   const now = new Date();
   console.log( `Asset Pipeline started at: ${now.toString()}`);
 
-  console.log('Download files from Google Drive...');
-  downloadFiles(inputDir);
+  // console.log('Download files from Google Drive...');
+  // downloadFiles(inputDir);
 
-  console.log('Copy all the folios to the web directory...');
-  copyFolioXMLs( inputDir, folioPath )
+  // console.log('Copy all the folios to the web directory...');
+  // copyFolioXMLs( inputDir, folioPath )
 
   console.log('Convert folios to HTML...');
   convert.convertFolios(folioPath);
 
-  console.log('Generate Search Index...');
-  searchIndex.generate(folioPath, searchIndexPath);
+  // console.log('Generate Search Index...');
+  // searchIndex.generate(folioPath, searchIndexPath);
 
-  clearLogFile();
 }
 
 main();
