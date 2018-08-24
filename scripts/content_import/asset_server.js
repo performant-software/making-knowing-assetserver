@@ -104,17 +104,17 @@ async function main() {
   const now = new Date();
   console.log( `Asset Pipeline started at: ${now.toString()}`);
 
-  // console.log('Download files from Google Drive...');
-  // downloadFiles(inputDir);
+  console.log('Download files from Google Drive...');
+  downloadFiles(inputDir);
 
-  // console.log('Copy all the folios to the web directory...');
-  // copyFolioXMLs( inputDir, folioPath )
+  console.log('Copy all the folios to the web directory...');
+  copyFolioXMLs( inputDir, folioPath )
 
   console.log('Convert folios to HTML...');
   convert.convertFolios(folioPath);
 
-  // console.log('Generate Search Index...');
-  // searchIndex.generate(folioPath, searchIndexPath);
+  console.log('Generate Search Index...');
+  searchIndex.generate(folioPath, searchIndexPath);
 
 }
 
