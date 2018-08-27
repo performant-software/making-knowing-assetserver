@@ -1,23 +1,18 @@
-
 const fs = require('fs');
-var Markdown = require('markdown-it')()
-// var { markdownItTable } = require('markdown-it-table');
-const inputFile = './TEMP/pan/annotest.md';
-const outputFile = './TEMP/pan/annotest.html';
+const inputFile = './scripts/content_import/TEMP/annotations/EG_029r_1.md';
+const outputFile = '../making-knowing/public/bnf-ms-fr-640/annotations/anno1.html'
 
-// use pandoc to convert from docx to md:
-// pandoc -f docx -t markdown annotest2.docx > annotest.md
+// use pandoc to convert from docx to html:
+// pandoc -f docx -t html EG_029r_1.docx > ../../../../../making-knowing/public/bnf-ms-fr-640/annotations/EG_029r_1.html
 
 function main() {
+    // read in HTML file
+    let annotationHTML = fs.readFileSync(inputFile, "utf8");
 
-    Markdown.use(require('markdown-it-footnote'));
-    Markdown.use(require('markdown-it-multimd-table'));
+    // load it into JSDOM and make the following changes:
 
-    // read in a markdown file
-    let mdAnnotation = fs.readFileSync(inputFile, "utf8");
-
-    // process it to HTML
-    var result = Markdown.render(mdAnnotation);
+    // rewrite the image URLs
+    // download images?
 
     // write it back out
     fs.writeFileSync(outputFile, result );
