@@ -1,13 +1,14 @@
 const fs = require('fs');
 
 const maxDriveTreeDepth = 20;
+const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 function processAnnotations() {
     const annotationDriveFile = './scripts/content_import/annotation-drive-map.json';
     const annotationDriveJSON = fs.readFileSync(annotationDriveFile, "utf8");
     const annotationDriveMap = JSON.parse(annotationDriveJSON);
-    const annotationDriveTree = createDriveTree(annotationDriveMap);
-    const annotationAssets = locateAnnotationAssets( annotationDriveTree );
+    const driveTreeRoot = createDriveTree(annotationDriveMap);
+    const annotationAssets = locateAnnotationAssets( driveTreeRoot );
 
     return;
     //////////
@@ -54,7 +55,7 @@ function createDriveTree(driveMap) {
     };
 
     // scan the drive map until all the entries have been added to the tree. 
-    // give up after 20 iterations (max tree depth)
+    // give up after maxDriveTreeDepth iterations 
     let stillLooking = true;
     let attempts = 0;
     while( stillLooking && attempts < maxDriveTreeDepth ) {
@@ -88,36 +89,59 @@ function createDriveTree(driveMap) {
     return rootNode;
 }
 
-function locateAnnotationAssets( driveTree ) {
+function locateAnnotationAssets( driveTreeRoot ) {
 
     let annotationAssets = [];
-    // drive tree node
-    // {
-    //     id: id,
-    //     name: name,
-    //     mimeType: mimeType,
-    //     children: []
-    //  }
+    let errors = [];
 
-    // annotation assets
-    // [
-    //     {
-    //         id
-    //         textFile
-    //         citationFile
-    //         illustrations: [ illustrationFile, ... ]
-    //     }
-    // ]
+    driveTreeRoot.children.forEach( semester => {
+        semester.children.forEach( annotationRoot => {
+            let textFileNode = null;
+            let captionFileNode = null;
+            let illustrations = [];
+            if( annotationRoot.children ) {
+                annotationRoot.children.forEach( assetFolder => {
+                    if( assetFolder.children ) {
+                        // find the text file and captions file in docx format, there should be exactly one in folder
+                        if( assetFolder.children.length === 1 ) {
+                            let fileNode = assetFolder.children[0];
+                            if( fileNode.mimeType === docxMimeType ) {
+                                if( assetFolder.name.includes('Text_') ) {
+                                    textFileNode = fileNode;
+                                } else if( assetFolder.name.includes('Captions_') ) {
+                                    captionFileNode = fileNode;
+                                }        
+                            }
+                        }
 
-    // locate all the annotations that can be processed
-    // - inside semester folders
-    // - folders for each annotation
-    // - there must be a txt folder
-    // - there must be one file in txt that is docx
-    // - optionally an images folder and a captions folder
-    // const annotations = locateAnnotations(annotationDriveTree);
-    // annotations retain the googleDrive ID for crosswalking
-    // report out the annotation folders that didn't validate
+                        // find the illustrations, if any
+                        if( assetFolder.name.includes('Illustrations_') ) {
+                            // TODO
+                        }
+                    } else {
+                        // TODO log that this asset folder has no sub folders
+                    }
+                });    
+            } else {
+                // TODO log that this annotation folder has no sub folders
+            }
+
+            if( textFileNode ) {
+                annotationAssets.push({
+                    id: textFileNode.id,
+                    textFile: textFileNode,
+                    captionFile: captionFileNode,
+                    illustrations: illustrations
+                });
+            } else {
+                // TODO log that this annotation folder didn't have a valid text file
+            }
+        });
+    });
+
+    if( errors.length > 0 ) {
+        // TODO create an error report
+    }
 
     return annotationAssets;
 }
