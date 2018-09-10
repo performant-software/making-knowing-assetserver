@@ -1,8 +1,12 @@
 const fs = require('fs');
 const { execSync } = require('child_process');
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
 
 const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
+const targetAnnotationDir = 'nginx/webroot/annotations';
+const targetImageDir = 'nginx/webroot/images';
 const maxDriveTreeDepth = 20;
 const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const jpegMimeType = "image/jpeg";
@@ -251,8 +255,10 @@ function syncDriveAssets( driveAssets ) {
         let illustrations = [];
         driveAsset.illustrations.forEach( illustration => {
             const illustrationSrc = `${googleShareName}${nodeToPath(illustration)}`;
-            const illustrationDest = `${illustrationsDir}/${illustration.name}`;   
+            const illustrationTmp = `${illustrationsDir}/${illustration.name}`;
+            const illustrationDest = `${illustrationsDir}/${illustration.id}`;   
             syncDriveFile(illustrationSrc, illustrationsDir);
+            fs.renameSync(illustrationTmp,illustrationDest);
             illustrations.push(illustrationDest);
         });
 
@@ -289,52 +295,105 @@ function syncDriveFile( source, dest ) {
     });  
 }
 
+function webSafeFilename( unfilteredName ) {
+    // TODO what about extensions?
+    const filteredName = unfilteredName.replace(/[&?\/"'\s]/g, '_').toLowerCase()
+    return filteredName;
+}
+
 function processAnnotation( annotationAsset ) {
 
-    function webSafeFilename( unfilteredName ) {
-        // TODO what about extensions?
-        const filteredName = unfilteredName.replace(/[&?\/"'\s]/g, '_').toLowerCase()
-        return filteredName;
+    function convertToHTML( source, target ) {
+        execSync(`pandoc -f docx -t html ${source} > ${target}`, (error, stdout, stderr) => {
+            console.log(`${stdout}`);
+            console.log(`${stderr}`);
+            if (error !== null) {
+                throw `ERROR: Unable to process file with pandoc: ${source}`;
+            }
+        }); 
     }
 
-    // webroot/annotations dir
-    //     <annotation id>.html
-    // webroot/images/
-    //     <annotation id>
-    //        web safe filenames
+    dirExists( targetAnnotationDir );
+    const annotationID = annotationAsset.id;
+    const annotationHTMLFile = `${targetAnnotationDir}/${annotationID}.html`;    
 
-    // annotation
-        // {
-        //     "id": "0BwJi-u8sfkVDfjlwTEhJVkxJNlFLcS1temhqeWU1VmhJbDdjMHNRYjR1WkQ0WmVoNGc5U1k",
-        //     "name": "\"Stucco for Molding\", fol. 29r",
-        //     "contentURL": "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/annotations/0BwJi-u8sfkVDfjlwTEhJVkxJNlFLcS1temhqeWU1VmhJbDdjMHNRYjR1WkQ0WmVoNGc5U1k.html",
-        //     "folio": "029r",
-        //     "author": "Nina Elizondo-Garza",
-        //     "abstract": "Abstract: Fol. 29r_1 describes a method for creating stucco which the author-practitioner claims is versatile and inexpensive. This annotation conducts a material-based analysis of the entry, including a reconstruction following the instructions in this entry and a historical investigation of ancient and early modern stucco recipes and stucco use, to better situate the author-practitioner within his context. These comparisons reveal that the author-practitioner's recipe is apparently unusual. Moreover, investigating stucco highlights the author-practitioner's interest in ornamentation, his focus on using pre-existing patterns rather than creating new ones, and his possible first-hand experiences of making domestic and ephemeral decorative art.",
-        //     "thumbnail": "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/figures/annotations/0BwJi-u8sfkVDfjlwTEhJVkxJNlFLcS1temhqeWU1VmhJbDdjMHNRYjR1WkQ0WmVoNGc5U1k.jpg",
-        //     "status": "draft"
-        // }
+    // Convert docx file to html
+    convertToHTML( annotationAsset.textFile, annotationHTMLFile );  
+    
+    // Make a directory for the illustrations and copy them to there
+    const illustrationsDir = `${targetImageDir}/${annotationID}`;
+    dirExists( illustrationsDir );
+    const illustrations = [];
+    annotationAsset.illustrations.forEach( illustration => {
+        const urlName = webSafeFilename(illustration);
+        const sourceFile = `${baseDir}/${annotationID}/illustrations/${illustration}`
+        const targetFile = `${illustrationsDir}/${urlName}`
+        fs.copyFileSync( sourceFile, targetFile );
+        illustrations.push( urlName );
+    })
 
-            // process the annotation sources into annotations
-    // - grab the files using rclone and rename
-    // use pandoc to convert from docx to html:
-    // pandoc -f docx -t html EG_029r_1.docx > ../../../../../making-knowing/public/bnf-ms-fr-640/annotations/EG_029r_1.html
-    //   - where does file go in the tree?
-    //   - map between google drive ID and web resource location
-    //   - pandoc docx -> html
-    //   - rewrite links to other annotations and to illustrations?
-    //   - how to pull in illustrations and captions
-    // - add annotation to json directory
-    //   - set status as draft
-    //   - determine title
-    //   - determine author
-    //   - extract abstract
-    //   - determine folio
-    //   - thumbnail?
+    // Take the pandoc output and transform it into final annotation html
+    processAnnotationHTML(annotationHTMLFile, illustrations);
+    
+    // TODO Manifest Data Record
+    // {
+    //     "id": "0BwJi-u8sfkVDfjlwTEhJVkxJNlFLcS1temhqeWU1VmhJbDdjMHNRYjR1WkQ0WmVoNGc5U1k",
+    //     "name": "\"Stucco for Molding\", fol. 29r",
+    //     "contentURL": "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/annotations/0BwJi-u8sfkVDfjlwTEhJVkxJNlFLcS1temhqeWU1VmhJbDdjMHNRYjR1WkQ0WmVoNGc5U1k.html",
+    //     "folio": "029r",
+    //     "author": "Nina Elizondo-Garza",
+    //     "abstract": "Abstract: Fol. 29r_1 describes a method for creating stucco which the author-practitioner claims is versatile and inexpensive. This annotation conducts a material-based analysis of the entry, including a reconstruction following the instructions in this entry and a historical investigation of ancient and early modern stucco recipes and stucco use, to better situate the author-practitioner within his context. These comparisons reveal that the author-practitioner's recipe is apparently unusual. Moreover, investigating stucco highlights the author-practitioner's interest in ornamentation, his focus on using pre-existing patterns rather than creating new ones, and his possible first-hand experiences of making domestic and ephemeral decorative art.",
+    //     "thumbnail": "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/figures/annotations/0BwJi-u8sfkVDfjlwTEhJVkxJNlFLcS1temhqeWU1VmhJbDdjMHNRYjR1WkQ0WmVoNGc5U1k.jpg",
+    //     "status": "draft"
+    // }
 
+    const annotation = {
+        id: annotationID,
+        contentURL: annotationHTMLFile,
+        status: "draft"
+    };
+    
+    return annotation;
+}
 
-    return null;
+function processAnnotationHTML( annotationHTMLFile ) {
 
+    // load document 
+    const html = fs.readFileSync( annotationHTMLFile, "utf8");
+    let htmlDOM = new JSDOM(html);
+    let doc = htmlDOM.window.document;
+  
+    // TODO Illustrations
+    // Rewrite links to other annotations and to illustrations
+    // example of a inline figure:
+    // <a href="https://drive.google.com/open?id=1S5NDuD3DLwDeYMrF6NDg2uo_xa-hZVsy"><span class="underline">[FA2017_Elizondo-Garza_29r_1_fig005_ChalkPlParisStucco</span></a>]
+    // changes to:
+    // <figure>
+    //     <img src="/bnf-ms-fr-640/figures/annotations/EG_029r_1_fig1.jpg" alt="Figure 1" />
+    //     <figcaption>Figure 1.</figcaption>
+    // </figure>
+
+    // TODO Captions 
+    // Create an HTML version of captions and parse them into main file
+
+    // TODO Tables
+    // - change first row of the table to be a th instead of tr
+
+    // TODO Links
+    // - Links to field notes should go to field notes
+    // - Links to other annotations should go to those annotations
+    // - Mentions of folios should be turned into links to those folios
+    // - The annotation should have a link to its folio entry
+
+    // TODO Manifest Data
+    // {
+    //     "name": "\"Stucco for Molding\", fol. 29r",
+    //     "folio": "029r",
+    //     "author": "Nina Elizondo-Garza",
+    // }
+
+    // write tranformed DOM
+    fs.writeFileSync(annotationHTMLFile, htmlDOM.serialize());
 }
 
 
@@ -349,16 +408,17 @@ function main() {
     if( mode === 'process' ) {
         const annotationAssets = findLocalAssets();
         processAnnotations(annotationAssets);
-        // TODO index the annotations for search
     }
     if( mode === 'all' ) {
         const annotationAssets = downloadAssets();
         processAnnotations(annotationAssets);
-        // TODO index the annotations for search
     }
     if( mode === 'help' ) {
         // TODO stdout help
     }
+
+    // TODO index the annotations for search
+    // TODO The entry that this annotation is named after should get an outward link to this annotation.
 }
 
 ///// RUN THE SCRIPT

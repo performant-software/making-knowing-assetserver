@@ -1,8 +1,9 @@
 .DS_Store
 TEMP
 node_modules
-folio
-search-idx
 unknown
 .vscode
 logfile.txt
+nginx/webroot/annotations
+nginx/webroot/folio
+nginx/webroot/search-idx
