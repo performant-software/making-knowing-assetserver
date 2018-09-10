@@ -7,16 +7,68 @@ const maxDriveTreeDepth = 20;
 const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const jpegMimeType = "image/jpeg";
 
-function processAnnotations() {
+function downloadAssets() {
+    // TODO: Use rclone to create a map of the manuscript folder in google drive
+    // rclone lsjson --drive-shared-with-me -R google:"BnF Ms Fr 640/Annotations" > annotation-drive-map.json
     const annotationDriveFile = './scripts/content_import/annotation-drive-map.json';
     const annotationDriveJSON = fs.readFileSync(annotationDriveFile, "utf8");
     const annotationDriveMap = JSON.parse(annotationDriveJSON);
     const driveTreeRoot = createDriveTree(annotationDriveMap);
     const annotationDriveAssets = locateAnnotationAssets( driveTreeRoot );
     const annotationAssets = syncDriveAssets( annotationDriveAssets );
+    return annotationAssets;
+}
 
-    return;
-    //////////
+function findLocalAssets() {
+
+    function findDocinDir( dir ) {
+        // expect to find a single docx file in this dir
+        const dirContents = fs.readdirSync(dir);
+        for( let i=0; i < dirContents.length; i++ ) {
+            const filename = dirContents[i];
+            if( filename.endsWith('.docx') ) return `${dir}/${filename}`;
+        }
+        return null;
+    };
+
+    let annotationAssets = [];
+    // go through annotation asset dir and create a source manifest
+    const annotationDirs = fs.readdirSync(baseDir);
+    annotationDirs.forEach( annotationDir => {
+        // ignore hidden directories
+        if( annotationDir.startsWith('.') ) return;
+
+        // record text file
+        const textFile = findDocinDir(`${baseDir}/${annotationDir}`);
+        if( textFile === null ) return;
+
+        // record caption file
+        const captionFile = findDocinDir(`${baseDir}/${annotationDir}/captions`)
+
+        // record illustrations
+        const illustrationDir = `${baseDir}/${annotationDir}/illustrations`;
+        let illustrations = [];
+        if( fs.existsSync(illustrationDir) ) {
+            const illustrationFiles = fs.readdirSync(illustrationDir);
+            illustrationFiles.forEach( illustrationFile => {
+                if( illustrationFile.startsWith('.') ) return;                
+                const illustrationPath = `${illustrationDir}/${illustrationFile}`;
+                illustrations.push(illustrationPath);
+            });
+        }
+
+        annotationAssets.push({
+            id: annotationDir,
+            textFile: textFile,
+            captionFile: captionFile,
+            illustrations: illustrations
+        });
+    });
+
+    return annotationAssets;
+}
+
+function processAnnotations(annotationAssets) {
 
     let annotationManifest = [];
     annotationAssets.forEach( asset => {
@@ -27,10 +79,6 @@ function processAnnotations() {
     // write out annotation manifest
     const annotationManifestFile = ''; // TODO where does it go?
     fs.writeFileSync(annotationManifestFile, annotationManifest );
-
-    // TODO index the annotations for search
-
-    console.log('annotation processing complete.')
 }
 
 function createDriveTree(driveMap) {
@@ -243,9 +291,9 @@ function syncDriveFile( source, dest ) {
 
 function processAnnotation( annotationAsset ) {
 
-    function filterLocalFilename( unfilteredName ) {
-        // replace white space and quotes with _
-        const filteredName = unfilteredName.replace(/["'\s]/g, '_')
+    function webSafeFilename( unfilteredName ) {
+        // TODO what about extensions?
+        const filteredName = unfilteredName.replace(/[&?\/"'\s]/g, '_').toLowerCase()
         return filteredName;
     }
 
@@ -284,14 +332,33 @@ function processAnnotation( annotationAsset ) {
     //   - determine folio
     //   - thumbnail?
 
+
+    return null;
+
 }
 
 
 function main() {
-    // Use rclone to create a map of the manuscript folder in google drive
-    // rclone lsjson --drive-shared-with-me -R google:"BnF Ms Fr 640/__Manuscript Pages" > google-drive-map.json
 
-    processAnnotations();
+    // TODO control mode with command line args
+    const mode = 'process';
+
+    if( mode === 'download' ) {
+        downloadAssets();
+    }
+    if( mode === 'process' ) {
+        const annotationAssets = findLocalAssets();
+        processAnnotations(annotationAssets);
+        // TODO index the annotations for search
+    }
+    if( mode === 'all' ) {
+        const annotationAssets = downloadAssets();
+        processAnnotations(annotationAssets);
+        // TODO index the annotations for search
+    }
+    if( mode === 'help' ) {
+        // TODO stdout help
+    }
 }
 
 ///// RUN THE SCRIPT
