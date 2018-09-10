@@ -1,7 +1,7 @@
 const fs = require('fs');
 const { execSync } = require('child_process');
 
-const googleShareName="\"BnF\ Ms\ Fr\ 640/__Manuscript\ Pages\"";
+const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const maxDriveTreeDepth = 20;
 const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -180,14 +180,19 @@ function syncDriveAssets( driveAssets ) {
         dirExists(annotationDir);
 
         const textFileSrc = `${googleShareName}${nodeToPath(driveAsset.textFile)}`;
-        const textFileDest = `${annotationDir}/${driveAsset.textFile.name}`
-        syncDriveFile(textFileSrc, textFileDest);
+        const textFileDest = `${annotationDir}/${driveAsset.textFile.name}`;
+        syncDriveFile(textFileSrc, annotationDir);
+
+        // create captions dir
+        const captionsDir = `${annotationDir}/captions`;
+        dirExists(captionsDir);
 
         // this file is optional
+        let captionFileDest = null;
         if( driveAsset.captionFile ) {
             const captionFileSrc = `${googleShareName}${nodeToPath(driveAsset.captionFile)}`;
-            const captionFileDest = `${annotationDir}/${driveAsset.captionFile.name}`    
-            syncDriveFile(captionFileSrc, captionFileDest);
+            captionFileDest = `${captionsDir}/${driveAsset.captionFile.name}`; 
+            syncDriveFile(captionFileSrc, captionsDir);
         }
 
         // make the illustrations dir 
@@ -198,8 +203,8 @@ function syncDriveAssets( driveAssets ) {
         let illustrations = [];
         driveAsset.illustrations.forEach( illustration => {
             const illustrationSrc = `${googleShareName}${nodeToPath(illustration)}`;
-            const illustrationDest = `${illustrationsDir}/${illustration.name}`    
-            syncDriveFile(illustrationSrc, illustrationDest);
+            const illustrationDest = `${illustrationsDir}/${illustration.name}`;   
+            syncDriveFile(illustrationSrc, illustrationsDir);
             illustrations.push(illustrationDest);
         });
 
@@ -224,7 +229,10 @@ function dirExists( dir ) {
 }
 
 function syncDriveFile( source, dest ) {
-    execSync(`rclone --drive-shared-with-me sync google:${source} ${dest}`, (error, stdout, stderr) => {
+    // escape all double quotes in source path
+    const escSource = source.replace(/"/g, '\\"')
+    console.log(`Downloading: ${source}`);
+    execSync(`rclone --drive-shared-with-me sync google:"${escSource}" "${dest}"`, (error, stdout, stderr) => {
         console.log(`${stdout}`);
         console.log(`${stderr}`);
         if (error !== null) {
@@ -235,10 +243,17 @@ function syncDriveFile( source, dest ) {
 
 function processAnnotation( annotationAsset ) {
 
-    // webroot/documents dir
-    //     <annotation|fieldnote id>.html
-    // webroot/images/<annotation|fieldnote id>
-    //     filenames
+    function filterLocalFilename( unfilteredName ) {
+        // replace white space and quotes with _
+        const filteredName = unfilteredName.replace(/["'\s]/g, '_')
+        return filteredName;
+    }
+
+    // webroot/annotations dir
+    //     <annotation id>.html
+    // webroot/images/
+    //     <annotation id>
+    //        web safe filenames
 
     // annotation
         // {
