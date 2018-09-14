@@ -56,8 +56,7 @@ function findLocalAssets() {
             const illustrationFiles = fs.readdirSync(illustrationDir);
             illustrationFiles.forEach( illustrationFile => {
                 if( illustrationFile.startsWith('.') ) return;                
-                const illustrationPath = `${illustrationDir}/${illustrationFile}`;
-                illustrations.push(illustrationPath);
+                illustrations.push(illustrationFile);
             });
         }
 
@@ -73,6 +72,9 @@ function findLocalAssets() {
 }
 
 function processAnnotations(annotationAssets) {
+
+    dirExists( targetAnnotationDir );
+    dirExists( targetImageDir );
 
     let annotationManifest = [];
     annotationAssets.forEach( asset => {
@@ -256,7 +258,7 @@ function syncDriveAssets( driveAssets ) {
         driveAsset.illustrations.forEach( illustration => {
             const illustrationSrc = `${googleShareName}${nodeToPath(illustration)}`;
             const illustrationTmp = `${illustrationsDir}/${illustration.name}`;
-            const illustrationDest = `${illustrationsDir}/${illustration.id}`;   
+            const illustrationDest = `${illustrationsDir}/${illustration.id}.jpg`;   
             syncDriveFile(illustrationSrc, illustrationsDir);
             fs.renameSync(illustrationTmp,illustrationDest);
             illustrations.push(illustrationDest);
@@ -283,8 +285,8 @@ function dirExists( dir ) {
 }
 
 function syncDriveFile( source, dest ) {
-    // escape all double quotes in source path
-    const escSource = source.replace(/"/g, '\\"')
+    // escape all quotes in source path
+    const escSource = source.replace(/"/g, '\\"').replace(/'/g, "\\'")
     console.log(`Downloading: ${source}`);
     execSync(`rclone --drive-shared-with-me sync google:"${escSource}" "${dest}"`, (error, stdout, stderr) => {
         console.log(`${stdout}`);
@@ -313,7 +315,6 @@ function processAnnotation( annotationAsset ) {
         }); 
     }
 
-    dirExists( targetAnnotationDir );
     const annotationID = annotationAsset.id;
     const annotationHTMLFile = `${targetAnnotationDir}/${annotationID}.html`;    
 
@@ -323,13 +324,10 @@ function processAnnotation( annotationAsset ) {
     // Make a directory for the illustrations and copy them to there
     const illustrationsDir = `${targetImageDir}/${annotationID}`;
     dirExists( illustrationsDir );
-    const illustrations = [];
     annotationAsset.illustrations.forEach( illustration => {
-        const urlName = webSafeFilename(illustration);
         const sourceFile = `${baseDir}/${annotationID}/illustrations/${illustration}`
-        const targetFile = `${illustrationsDir}/${urlName}`
+        const targetFile = `${illustrationsDir}/${illustration}`
         fs.copyFileSync( sourceFile, targetFile );
-        illustrations.push( urlName );
     })
 
     // Take the pandoc output and transform it into final annotation html

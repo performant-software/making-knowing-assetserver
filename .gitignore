@@ -7,3 +7,4 @@ logfile.txt
 nginx/webroot/annotations
 nginx/webroot/folio
 nginx/webroot/search-idx
+nginx/webroot/images
