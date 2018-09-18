@@ -5,14 +5,16 @@ const { JSDOM } = jsdom;
 
 const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
-const targetAnnotationDir = 'nginx/webroot/annotations';
-const targetImageDir = 'nginx/webroot/images';
+const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
+const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
 const imageRootURL = "http://localhost:4000/bnf-ms-fr-640/images";
 const maxDriveTreeDepth = 20;
 const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const jpegMimeType = "image/jpeg";
-const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=([^"]*)/g;
+// const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=([^"]*)/g;
+const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=/;
+const googleLinkRegX2 = /https:\/\/drive.google.com\/file\/d\//;
 
 function downloadAssets() {
     // TODO: Use rclone to create a map of the manuscript folder in google drive
@@ -378,31 +380,49 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations 
     let htmlDOM = new JSDOM(html);
     let doc = htmlDOM.window.document;
 
-    let anchorTags = doc.querySelectorAll('a');
+    let anchorTags = doc.getElementsByTagName('A');
 
     function findParentParagraph( node ) {
         if( !node.parentNode ) return null;
-        if( node.parentNode.nodeName.toLowerCase() === 'p' ) return node.parentNode;
+        if( node.parentNode.nodeName === 'P' ) return node.parentNode;
         return findParentParagraph( node.parentNode );
     }
 
-    anchorTags.forEach( anchorTag => {
-        const href = anchorTag.attributes['href'].nodeValue;
-        var match = googleLinkRegX.exec(href);
-        if( match && match.length === 2 ) {
+    function findImageID( url ) {
+        if( url.match(googleLinkRegX) ) {
+            return url.split('=')[1];
+        } 
+        if( url.match(googleLinkRegX2) ) {
+            // https://drive.google.com/file/d/0BwJi-u8sfkVDeVozNmxHN3dab0E/view?usp=sharing
+            return url.split('/')[5];
+        }
+        return null;
+    }
+
+    let replacements = [];
+    for( let i=0; i< anchorTags.length; i++ ) {
+        let anchorTag = anchorTags[i];
+        const imageID = findImageID( anchorTag.href );
+        if( imageID ) {
             const paragraphElement = findParentParagraph(anchorTag);     
             if( paragraphElement ) {
-                const id = match[1];
-                const figureRefHTML = `<b>${anchorTag.innerHTML}</b>`;   
-                anchorTag.outerHTML = figureRefHTML; 
+                const figureRefEl = doc.createElement('b');
+                figureRefEl.innerHTML = anchorTag.innerHTML; 
+                replacements.push([anchorTag,figureRefEl]);
                 // TODO need to draw from inner HTML the figure number and find that in the captions
                 let figureEl = doc.createElement('figure'); 
-                const imageURL = `${imageRootURL}/${annotationID}/${id}.jpg`
+                const imageURL = `${imageRootURL}/${annotationID}/${imageID}.jpg`
                 figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" /><figcaption>Figure 1.</figcaption>`;  
                 // figure should be placed after this paragraph and the other figures
                 paragraphElement.parentNode.insertBefore(figureEl, paragraphElement.nextSibling);       
             }
         }
+    }
+
+    // replacements done after we walk the list to avoid confusing DOM
+    replacements.forEach( replacement => {
+        let [oldEl, newEl] = replacement;
+        oldEl.replaceWith(newEl);
     });
 
     // TODO Captions 
@@ -438,6 +458,7 @@ function main() {
     }
     if( mode === 'process' ) {
         const annotationAssets = findLocalAssets();
+        // processAnnotations([annotationAssets[0]]);
         processAnnotations(annotationAssets);
     }
     if( mode === 'all' ) {
