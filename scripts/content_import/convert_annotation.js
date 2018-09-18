@@ -7,6 +7,8 @@ const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const targetAnnotationDir = 'nginx/webroot/annotations';
 const targetImageDir = 'nginx/webroot/images';
+const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
+const imageRootURL = "http://localhost:4000/bnf-ms-fr-640/images";
 const maxDriveTreeDepth = 20;
 const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const jpegMimeType = "image/jpeg";
@@ -358,7 +360,7 @@ function processAnnotation( annotationAsset ) {
     const annotation = {
         id: annotationID,
         name: annotationID,
-        contentURL: annotationHTMLFile,
+        contentURL: `${annotationRootURL}/${annotationID}.html`,
         folio: "001r",
         author: "AUTHOR NAME",
         abstract: "Lorem ipsum",
@@ -395,7 +397,8 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations 
                 anchorTag.outerHTML = figureRefHTML; 
                 // TODO need to draw from inner HTML the figure number and find that in the captions
                 let figureEl = doc.createElement('figure'); 
-                figureEl.innerHTML = `<img src="/images/${annotationID}/${id}.jpg" alt="Figure" /><figcaption>Figure 1.</figcaption>`;  
+                const imageURL = `${imageRootURL}/${annotationID}/${id}.jpg`
+                figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" /><figcaption>Figure 1.</figcaption>`;  
                 // figure should be placed after this paragraph and the other figures
                 paragraphElement.parentNode.insertBefore(figureEl, paragraphElement.nextSibling);       
             }
