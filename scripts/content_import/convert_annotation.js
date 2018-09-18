@@ -10,6 +10,7 @@ const targetImageDir = 'nginx/webroot/images';
 const maxDriveTreeDepth = 20;
 const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const jpegMimeType = "image/jpeg";
+const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=([^"]*)/g;
 
 function downloadAssets() {
     // TODO: Use rclone to create a map of the manuscript folder in google drive
@@ -76,15 +77,24 @@ function processAnnotations(annotationAssets) {
     dirExists( targetAnnotationDir );
     dirExists( targetImageDir );
 
-    let annotationManifest = [];
+    let annotationContent = [];
     annotationAssets.forEach( asset => {
         let annotation = processAnnotation(asset);
-        annotationManifest.push(annotation);
+        annotationContent.push(annotation);
     })
 
+    let annotationManifest = {
+        title: "Annotations of BnF MS Fr. 640",
+        content: annotationContent
+    }
+
     // write out annotation manifest
-    const annotationManifestFile = ''; // TODO where does it go?
-    fs.writeFileSync(annotationManifestFile, annotationManifest );
+    const annotationManifestFile = `${targetAnnotationDir}/annotations.json`;
+    fs.writeFile(annotationManifestFile, JSON.stringify(annotationManifest, null, 3), (err) => {
+        if (err) {
+          console.log(err);
+        } 
+    });
 }
 
 function createDriveTree(driveMap) {
@@ -306,7 +316,7 @@ function webSafeFilename( unfilteredName ) {
 function processAnnotation( annotationAsset ) {
 
     function convertToHTML( source, target ) {
-        execSync(`pandoc -f docx -t html ${source} > ${target}`, (error, stdout, stderr) => {
+        execSync(`pandoc -f docx -t html "${source}" > "${target}"`, (error, stdout, stderr) => {
             console.log(`${stdout}`);
             console.log(`${stderr}`);
             if (error !== null) {
@@ -331,7 +341,7 @@ function processAnnotation( annotationAsset ) {
     })
 
     // Take the pandoc output and transform it into final annotation html
-    processAnnotationHTML(annotationHTMLFile, illustrations);
+    processAnnotationHTML(annotationHTMLFile, annotationID);
     
     // TODO Manifest Data Record
     // {
@@ -347,29 +357,50 @@ function processAnnotation( annotationAsset ) {
 
     const annotation = {
         id: annotationID,
+        name: annotationID,
         contentURL: annotationHTMLFile,
+        folio: "001r",
+        author: "AUTHOR NAME",
+        abstract: "Lorem ipsum",
+        thumbnail: "",        
         status: "draft"
     };
     
     return annotation;
 }
 
-function processAnnotationHTML( annotationHTMLFile ) {
+function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations ) {
 
     // load document 
-    const html = fs.readFileSync( annotationHTMLFile, "utf8");
+    let html = fs.readFileSync( annotationHTMLFile, "utf8");
     let htmlDOM = new JSDOM(html);
     let doc = htmlDOM.window.document;
-  
-    // TODO Illustrations
-    // Rewrite links to other annotations and to illustrations
-    // example of a inline figure:
-    // <a href="https://drive.google.com/open?id=1S5NDuD3DLwDeYMrF6NDg2uo_xa-hZVsy"><span class="underline">[FA2017_Elizondo-Garza_29r_1_fig005_ChalkPlParisStucco</span></a>]
-    // changes to:
-    // <figure>
-    //     <img src="/bnf-ms-fr-640/figures/annotations/EG_029r_1_fig1.jpg" alt="Figure 1" />
-    //     <figcaption>Figure 1.</figcaption>
-    // </figure>
+
+    let anchorTags = doc.querySelectorAll('a');
+
+    function findParentParagraph( node ) {
+        if( !node.parentNode ) return null;
+        if( node.parentNode.nodeName.toLowerCase() === 'p' ) return node.parentNode;
+        return findParentParagraph( node.parentNode );
+    }
+
+    anchorTags.forEach( anchorTag => {
+        const href = anchorTag.attributes['href'].nodeValue;
+        var match = googleLinkRegX.exec(href);
+        if( match && match.length === 2 ) {
+            const paragraphElement = findParentParagraph(anchorTag);     
+            if( paragraphElement ) {
+                const id = match[1];
+                const figureRefHTML = `<b>${anchorTag.innerHTML}</b>`;   
+                anchorTag.outerHTML = figureRefHTML; 
+                // TODO need to draw from inner HTML the figure number and find that in the captions
+                let figureEl = doc.createElement('figure'); 
+                figureEl.innerHTML = `<img src="/images/${annotationID}/${id}.jpg" alt="Figure" /><figcaption>Figure 1.</figcaption>`;  
+                // figure should be placed after this paragraph and the other figures
+                paragraphElement.parentNode.insertBefore(figureEl, paragraphElement.nextSibling);       
+            }
+        }
+    });
 
     // TODO Captions 
     // Create an HTML version of captions and parse them into main file
@@ -383,19 +414,18 @@ function processAnnotationHTML( annotationHTMLFile ) {
     // - Mentions of folios should be turned into links to those folios
     // - The annotation should have a link to its folio entry
 
-    // TODO Manifest Data
-    // {
-    //     "name": "\"Stucco for Molding\", fol. 29r",
-    //     "folio": "029r",
-    //     "author": "Nina Elizondo-Garza",
-    // }
-
     // write tranformed DOM
-    fs.writeFileSync(annotationHTMLFile, htmlDOM.serialize());
+    fs.writeFileSync( annotationHTMLFile, htmlDOM.serialize() );
 }
 
 
 function main() {
+
+    // processAnnotationHTML(
+    //     'nginx/webroot/annotations/10AcxQUvF9X-bFESeqAEjqEWFyrSchAbdk15o1OSVdRU.html',
+    //     '10AcxQUvF9X-bFESeqAEjqEWFyrSchAbdk15o1OSVdRU'
+    // );
+    // return;
 
     // TODO control mode with command line args
     const mode = 'process';
