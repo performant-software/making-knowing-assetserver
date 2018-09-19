@@ -15,6 +15,7 @@ const jpegMimeType = "image/jpeg";
 // const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=([^"]*)/g;
 const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=/;
 const googleLinkRegX2 = /https:\/\/drive.google.com\/file\/d\//;
+const loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi molestie mauris nec arcu finibus egestas. Nam posuere venenatis turpis in iaculis. Integer vel leo ut augue ornare scelerisque. Pellentesque cursus, augue nec lobortis aliquet, urna nunc tempus lorem, in tincidunt nibh libero non enim. Sed odio massa, dignissim a lectus non, pellentesque tincidunt orci. Quisque tincidunt nunc et dolor laoreet, sit amet tempor diam tempus. Morbi eros nibh, porta eget lacus vel, laoreet placerat ligula.';
 
 function downloadAssets() {
     // TODO: Use rclone to create a map of the manuscript folder in google drive
@@ -412,7 +413,7 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations 
                 // TODO need to draw from inner HTML the figure number and find that in the captions
                 let figureEl = doc.createElement('figure'); 
                 const imageURL = `${imageRootURL}/${annotationID}/${imageID}.jpg`
-                figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" /><figcaption>Figure 1.</figcaption>`;  
+                figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" /><figcaption>Figure X. ${loremIpsum}</figcaption>`;  
                 // figure should be placed after this paragraph and the other figures
                 paragraphElement.parentNode.insertBefore(figureEl, paragraphElement.nextSibling);       
             }
