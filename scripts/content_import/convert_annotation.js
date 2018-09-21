@@ -9,10 +9,11 @@ const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations'
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
 const imageRootURL = "http://localhost:4000/bnf-ms-fr-640/images";
+// const annotationRootURL = "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/annotations";
+// const imageRootURL = "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/images";
 const maxDriveTreeDepth = 20;
 const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const jpegMimeType = "image/jpeg";
-// const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=([^"]*)/g;
 const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=/;
 const googleLinkRegX2 = /https:\/\/drive.google.com\/file\/d\//;
 const loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi molestie mauris nec arcu finibus egestas. Nam posuere venenatis turpis in iaculis. Integer vel leo ut augue ornare scelerisque. Pellentesque cursus, augue nec lobortis aliquet, urna nunc tempus lorem, in tincidunt nibh libero non enim. Sed odio massa, dignissim a lectus non, pellentesque tincidunt orci. Quisque tincidunt nunc et dolor laoreet, sit amet tempor diam tempus. Morbi eros nibh, porta eget lacus vel, laoreet placerat ligula.';
