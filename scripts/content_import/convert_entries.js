@@ -36,6 +36,7 @@ function main() {
     //   },
 
     let processedEntries = [];
+    let ordinalID = 1;
     entries.forEach( entry => {
         let { folio, heading_tc, heading_tcn, heading_tl } = entry;
 
@@ -46,6 +47,7 @@ function main() {
         });
         
         processedEntries.push({
+            id: ordinalID++,
             folio, 
             heading_tc, 
             heading_tcn, 
