@@ -16,7 +16,10 @@ const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessi
 const jpegMimeType = "image/jpeg";
 const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=/;
 const googleLinkRegX2 = /https:\/\/drive.google.com\/file\/d\//;
+const figureCitation = /[F|f]ig(\.|ure[\.]*)[\s]*[0-9]+/;
+const figureNumber = /[0-9]+/;
 const loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi molestie mauris nec arcu finibus egestas. Nam posuere venenatis turpis in iaculis. Integer vel leo ut augue ornare scelerisque. Pellentesque cursus, augue nec lobortis aliquet, urna nunc tempus lorem, in tincidunt nibh libero non enim. Sed odio massa, dignissim a lectus non, pellentesque tincidunt orci. Quisque tincidunt nunc et dolor laoreet, sit amet tempor diam tempus. Morbi eros nibh, porta eget lacus vel, laoreet placerat ligula.';
+const invalidFigureNumber = "XX";
 
 function downloadAssets() {
     // TODO: Use rclone to create a map of the manuscript folder in google drive
@@ -411,10 +414,11 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations 
                 const figureRefEl = doc.createElement('b');
                 figureRefEl.innerHTML = anchorTag.innerHTML; 
                 replacements.push([anchorTag,figureRefEl]);
-                // TODO need to draw from inner HTML the figure number and find that in the captions
+                let figureNumber = extractFigureNumber(anchorTag.innerHTML);
                 let figureEl = doc.createElement('figure'); 
                 const imageURL = `${imageRootURL}/${annotationID}/${imageID}.jpg`
-                figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" /><figcaption>Figure X. ${loremIpsum}</figcaption>`;  
+                // TODO look up the figure caption based on the number.
+                figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" /><figcaption>Figure ${figureNumber}. ${loremIpsum}</figcaption>`;  
                 // figure should be placed after this paragraph and the other figures
                 paragraphElement.parentNode.insertBefore(figureEl, paragraphElement.nextSibling);       
             }
@@ -443,6 +447,17 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations 
     fs.writeFileSync( annotationHTMLFile, htmlDOM.serialize() );
 }
 
+function extractFigureNumber( figureText ) {
+    const figureMatch = figureText.match(figureCitation)
+    if( figureMatch ) {
+        let figureNum = figureMatch[0].match(figureNumber)[0];
+        while( figureNum && figureNum[0] === '0') {
+            figureNum = figureNum.substr(1);
+        }
+        if(figureNum && figureNum.length > 0) return figureNum;
+    }
+    return invalidFigureNumber;
+}
 
 function main() {
 
