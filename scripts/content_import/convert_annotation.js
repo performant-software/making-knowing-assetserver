@@ -7,6 +7,7 @@ const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
+const tempCaptionDir = 'scripts/content_import/TEMP/captions';
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
 const imageRootURL = "http://localhost:4000/bnf-ms-fr-640/images";
 // const annotationRootURL = "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/annotations";
@@ -85,6 +86,7 @@ function processAnnotations(annotationAssets) {
 
     dirExists( targetAnnotationDir );
     dirExists( targetImageDir );
+    dirExists( tempCaptionDir );
 
     let annotationContent = [];
     annotationAssets.forEach( asset => {
@@ -339,6 +341,14 @@ function processAnnotation( annotationAsset ) {
 
     // Convert docx file to html
     convertToHTML( annotationAsset.textFile, annotationHTMLFile );  
+
+    // Convert the captions file if it exists and extract the captions
+    let captions = {};
+    if( annotationAsset.captionFile ) {
+        const captionHTMLFile = `${tempCaptionDir}/${annotationID}.html`;  
+        convertToHTML( annotationAsset.captionFile, captionHTMLFile );  
+        captions = processCaptions(captionHTMLFile);
+    }
     
     // Make a directory for the illustrations and copy them to there
     const illustrationsDir = `${targetImageDir}/${annotationID}`;
@@ -350,7 +360,7 @@ function processAnnotation( annotationAsset ) {
     })
 
     // Take the pandoc output and transform it into final annotation html
-    processAnnotationHTML(annotationHTMLFile, annotationID);
+    processAnnotationHTML(annotationHTMLFile, annotationID, captions);
     
     // TODO Manifest Data Record
     // {
@@ -378,7 +388,21 @@ function processAnnotation( annotationAsset ) {
     return annotation;
 }
 
-function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations ) {
+// returns a hash of the captions keyed to figure number
+function processCaptions( captionHTMLFile ) {
+    let html = fs.readFileSync( captionHTMLFile, "utf8");
+    let htmlDOM = new JSDOM(html);
+    let doc = htmlDOM.window.document;
+    let captions = {};
+
+    // TODO find all of the paragraphs that contain a figure number
+    // index the paragraph innerHTML to the figure number
+    // remove links surrounding figures?
+
+    return captions;
+}
+
+function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
 
     // load document 
     let html = fs.readFileSync( annotationHTMLFile, "utf8");
@@ -430,9 +454,6 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations 
         let [oldEl, newEl] = replacement;
         oldEl.replaceWith(newEl);
     });
-
-    // TODO Captions 
-    // Create an HTML version of captions and parse them into main file
 
     // TODO Tables
     // - change first row of the table to be a th instead of tr
