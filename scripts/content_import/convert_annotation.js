@@ -7,6 +7,7 @@ const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
+const tempCaptionDir = 'scripts/content_import/TEMP/captions';
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
 const imageRootURL = "http://localhost:4000/bnf-ms-fr-640/images";
 // const annotationRootURL = "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/annotations";
@@ -16,7 +17,10 @@ const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessi
 const jpegMimeType = "image/jpeg";
 const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=/;
 const googleLinkRegX2 = /https:\/\/drive.google.com\/file\/d\//;
+const figureCitation = /[F|f]ig(\.|ure[\.]*)[\s]*[0-9]+/;
+const figureNumber = /[0-9]+/;
 const loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi molestie mauris nec arcu finibus egestas. Nam posuere venenatis turpis in iaculis. Integer vel leo ut augue ornare scelerisque. Pellentesque cursus, augue nec lobortis aliquet, urna nunc tempus lorem, in tincidunt nibh libero non enim. Sed odio massa, dignissim a lectus non, pellentesque tincidunt orci. Quisque tincidunt nunc et dolor laoreet, sit amet tempor diam tempus. Morbi eros nibh, porta eget lacus vel, laoreet placerat ligula.';
+const invalidFigureNumber = "XX";
 
 function downloadAssets() {
     // TODO: Use rclone to create a map of the manuscript folder in google drive
@@ -82,6 +86,7 @@ function processAnnotations(annotationAssets) {
 
     dirExists( targetAnnotationDir );
     dirExists( targetImageDir );
+    dirExists( tempCaptionDir );
 
     let annotationContent = [];
     annotationAssets.forEach( asset => {
@@ -336,6 +341,14 @@ function processAnnotation( annotationAsset ) {
 
     // Convert docx file to html
     convertToHTML( annotationAsset.textFile, annotationHTMLFile );  
+
+    // Convert the captions file if it exists and extract the captions
+    let captions = {};
+    if( annotationAsset.captionFile ) {
+        const captionHTMLFile = `${tempCaptionDir}/${annotationID}.html`;  
+        convertToHTML( annotationAsset.captionFile, captionHTMLFile );  
+        captions = processCaptions(captionHTMLFile);
+    }
     
     // Make a directory for the illustrations and copy them to there
     const illustrationsDir = `${targetImageDir}/${annotationID}`;
@@ -347,7 +360,7 @@ function processAnnotation( annotationAsset ) {
     })
 
     // Take the pandoc output and transform it into final annotation html
-    processAnnotationHTML(annotationHTMLFile, annotationID);
+    processAnnotationHTML(annotationHTMLFile, annotationID, captions);
     
     // TODO Manifest Data Record
     // {
@@ -375,7 +388,28 @@ function processAnnotation( annotationAsset ) {
     return annotation;
 }
 
-function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations ) {
+// returns a hash of the captions keyed to figure number
+function processCaptions( captionHTMLFile ) {
+    let html = fs.readFileSync( captionHTMLFile, "utf8");
+    let htmlDOM = new JSDOM(html);
+    let doc = htmlDOM.window.document;
+    let captions = {};
+
+    // find all of the paragraphs that contain a figure number
+    // index the paragraph innerHTML to the figure number
+    let paragraphTags = doc.getElementsByTagName('P');
+    for( let i=0; i< paragraphTags.length; i++ ) {
+        const captionText = paragraphTags[i].innerHTML;
+        const figureNumber = extractFigureNumber(captionText); 
+        if( figureNumber !== invalidFigureNumber ) {
+            captions[figureNumber] = captionText;
+        }  
+    }
+
+    return captions;
+}
+
+function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
 
     // load document 
     let html = fs.readFileSync( annotationHTMLFile, "utf8");
@@ -383,12 +417,6 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations 
     let doc = htmlDOM.window.document;
 
     let anchorTags = doc.getElementsByTagName('A');
-
-    function findParentParagraph( node ) {
-        if( !node.parentNode ) return null;
-        if( node.parentNode.nodeName === 'P' ) return node.parentNode;
-        return findParentParagraph( node.parentNode );
-    }
 
     function findImageID( url ) {
         if( url.match(googleLinkRegX) ) {
@@ -411,10 +439,12 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations 
                 const figureRefEl = doc.createElement('b');
                 figureRefEl.innerHTML = anchorTag.innerHTML; 
                 replacements.push([anchorTag,figureRefEl]);
-                // TODO need to draw from inner HTML the figure number and find that in the captions
+                let figureNumber = extractFigureNumber(anchorTag.innerHTML);
                 let figureEl = doc.createElement('figure'); 
                 const imageURL = `${imageRootURL}/${annotationID}/${imageID}.jpg`
-                figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" /><figcaption>Figure X. ${loremIpsum}</figcaption>`;  
+                const caption = captions[figureNumber];
+                const figCaption = (caption) ? `<figcaption>${caption}</figcaption>` : '';
+                figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" />${figCaption}`;  
                 // figure should be placed after this paragraph and the other figures
                 paragraphElement.parentNode.insertBefore(figureEl, paragraphElement.nextSibling);       
             }
@@ -426,9 +456,6 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations 
         let [oldEl, newEl] = replacement;
         oldEl.replaceWith(newEl);
     });
-
-    // TODO Captions 
-    // Create an HTML version of captions and parse them into main file
 
     // TODO Tables
     // - change first row of the table to be a th instead of tr
@@ -443,6 +470,23 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, illustrations 
     fs.writeFileSync( annotationHTMLFile, htmlDOM.serialize() );
 }
 
+function findParentParagraph( node ) {
+    if( !node.parentNode ) return null;
+    if( node.parentNode.nodeName === 'P' ) return node.parentNode;
+    return findParentParagraph( node.parentNode );
+}
+
+function extractFigureNumber( figureText ) {
+    const figureMatch = figureText.match(figureCitation)
+    if( figureMatch ) {
+        let figureNum = figureMatch[0].match(figureNumber)[0];
+        while( figureNum && figureNum[0] === '0') {
+            figureNum = figureNum.substr(1);
+        }
+        if(figureNum && figureNum.length > 0) return figureNum;
+    }
+    return invalidFigureNumber;
+}
 
 function main() {
 
