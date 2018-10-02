@@ -8,6 +8,9 @@ const baseDir = 'scripts/content_import/TEMP/annotations';
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
+const convertAnnotationLog = 'scripts/content_import/TEMP/convert_annotation.log';
+let logfile = null;
+
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
 const imageRootURL = "http://localhost:4000/bnf-ms-fr-640/images";
 // const annotationRootURL = "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/annotations";
@@ -19,7 +22,6 @@ const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=/;
 const googleLinkRegX2 = /https:\/\/drive.google.com\/file\/d\//;
 const figureCitation = /[F|f]ig(\.|ure[\.]*)[\s]*[0-9]+/;
 const figureNumber = /[0-9]+/;
-const loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi molestie mauris nec arcu finibus egestas. Nam posuere venenatis turpis in iaculis. Integer vel leo ut augue ornare scelerisque. Pellentesque cursus, augue nec lobortis aliquet, urna nunc tempus lorem, in tincidunt nibh libero non enim. Sed odio massa, dignissim a lectus non, pellentesque tincidunt orci. Quisque tincidunt nunc et dolor laoreet, sit amet tempor diam tempus. Morbi eros nibh, porta eget lacus vel, laoreet placerat ligula.';
 const invalidFigureNumber = "XX";
 
 function downloadAssets() {
@@ -104,6 +106,7 @@ function processAnnotations(annotationAssets) {
     fs.writeFile(annotationManifestFile, JSON.stringify(annotationManifest, null, 3), (err) => {
         if (err) {
           console.log(err);
+          writeLog(err);
         } 
     });
 }
@@ -174,7 +177,6 @@ function createDriveTree(driveMap) {
 function locateAnnotationAssets( driveTreeRoot ) {
 
     let annotationAssets = [];
-    let errors = [];
 
     driveTreeRoot.children.forEach( semester => {
         semester.children.forEach( annotationRoot => {
@@ -206,7 +208,7 @@ function locateAnnotationAssets( driveTreeRoot ) {
                         }
                     } else {
                         // TODO log that this asset folder has no sub folders
-                        
+                        writeLog(`this asset folder has no sub folders`);
                     }
                 });    
             } else {
@@ -225,10 +227,6 @@ function locateAnnotationAssets( driveTreeRoot ) {
             }
         });
     });
-
-    if( errors.length > 0 ) {
-        // TODO create an error report
-    }
 
     return annotationAssets;
 }
@@ -488,6 +486,14 @@ function extractFigureNumber( figureText ) {
     return invalidFigureNumber;
 }
 
+function writeLog(logMessage) {
+    fs.writeSync(logfile, logMessage+'\n');
+}
+
+function writeLogSeperator() {
+    fs.writeSync(logfile, '==============================\n');
+}
+
 function main() {
 
     // processAnnotationHTML(
@@ -496,15 +502,21 @@ function main() {
     // );
     // return;
 
+    // Open log file
+    logfile = fs.openSync(convertAnnotationLog, "w");
+
     // TODO control mode with command line args
     const mode = 'process';
+
+    let date = new Date();
+    writeLog(`Annotation processing in ${mode} mode at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
+    writeLogSeperator();
 
     if( mode === 'download' ) {
         downloadAssets();
     }
     if( mode === 'process' ) {
         const annotationAssets = findLocalAssets();
-        // processAnnotations([annotationAssets[0]]);
         processAnnotations(annotationAssets);
     }
     if( mode === 'all' ) {
@@ -517,6 +529,13 @@ function main() {
 
     // TODO index the annotations for search
     // TODO The entry that this annotation is named after should get an outward link to this annotation.
+
+    date = new Date();
+    writeLogSeperator();
+    writeLog(`Annotation processing finished at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
+
+    // Close log file
+    fs.closeSync(logfile);
 }
 
 ///// RUN THE SCRIPT
