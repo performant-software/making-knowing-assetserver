@@ -395,9 +395,16 @@ function processCaptions( captionHTMLFile ) {
     let doc = htmlDOM.window.document;
     let captions = {};
 
-    // TODO find all of the paragraphs that contain a figure number
+    // find all of the paragraphs that contain a figure number
     // index the paragraph innerHTML to the figure number
-    // remove links surrounding figures?
+    let paragraphTags = doc.getElementsByTagName('P');
+    for( let i=0; i< paragraphTags.length; i++ ) {
+        const captionText = paragraphTags[i].innerHTML;
+        const figureNumber = extractFigureNumber(captionText); 
+        if( figureNumber !== invalidFigureNumber ) {
+            captions[figureNumber] = captionText;
+        }  
+    }
 
     return captions;
 }
@@ -410,12 +417,6 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
     let doc = htmlDOM.window.document;
 
     let anchorTags = doc.getElementsByTagName('A');
-
-    function findParentParagraph( node ) {
-        if( !node.parentNode ) return null;
-        if( node.parentNode.nodeName === 'P' ) return node.parentNode;
-        return findParentParagraph( node.parentNode );
-    }
 
     function findImageID( url ) {
         if( url.match(googleLinkRegX) ) {
@@ -441,8 +442,9 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
                 let figureNumber = extractFigureNumber(anchorTag.innerHTML);
                 let figureEl = doc.createElement('figure'); 
                 const imageURL = `${imageRootURL}/${annotationID}/${imageID}.jpg`
-                // TODO look up the figure caption based on the number.
-                figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" /><figcaption>Figure ${figureNumber}. ${loremIpsum}</figcaption>`;  
+                const caption = captions[figureNumber];
+                const figCaption = (caption) ? `<figcaption>${caption}</figcaption>` : '';
+                figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" />${figCaption}`;  
                 // figure should be placed after this paragraph and the other figures
                 paragraphElement.parentNode.insertBefore(figureEl, paragraphElement.nextSibling);       
             }
@@ -466,6 +468,12 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
 
     // write tranformed DOM
     fs.writeFileSync( annotationHTMLFile, htmlDOM.serialize() );
+}
+
+function findParentParagraph( node ) {
+    if( !node.parentNode ) return null;
+    if( node.parentNode.nodeName === 'P' ) return node.parentNode;
+    return findParentParagraph( node.parentNode );
 }
 
 function extractFigureNumber( figureText ) {
