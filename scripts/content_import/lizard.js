@@ -20,6 +20,7 @@ const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessi
 const jpegMimeType = "image/jpeg";
 const googleLinkRegX = /https:\/\/drive\.google\.com\/open\?id=/;
 const googleLinkRegX2 = /https:\/\/drive.google.com\/file\/d\//;
+const wikischolarRegX = /wikischolars/;
 const figureCitation = /[F|f]ig(\.|ure[\.]*)[\s]*[0-9]+/;
 const figureNumber = /[0-9]+/;
 const invalidFigureNumber = "XX";
@@ -74,6 +75,9 @@ function findLocalAssets() {
 }
 
 function processAnnotations(annotationAssets) {
+
+    writeLog("Processing Annotations");
+    writeLogSeperator();
 
     dirExists( targetAnnotationDir );
     dirExists( targetImageDir );
@@ -399,6 +403,7 @@ function processCaptions( captionHTMLFile ) {
 
 function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
 
+    writeLog(`Processing annotation ${annotationID}`);
     // load document 
     let html = fs.readFileSync( annotationHTMLFile, "utf8");
     let htmlDOM = new JSDOM(html);
@@ -424,17 +429,26 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
         if( imageID ) {
             const paragraphElement = findParentParagraph(anchorTag);     
             if( paragraphElement ) {
-                const figureRefEl = doc.createElement('b');
+                const figureRefEl = doc.createElement('i');
                 figureRefEl.innerHTML = anchorTag.innerHTML; 
                 replacements.push([anchorTag,figureRefEl]);
                 let figureNumber = extractFigureNumber(anchorTag.innerHTML);
-                let figureEl = doc.createElement('figure'); 
-                const imageURL = `${imageRootURL}/${annotationID}/${imageID}.jpg`
-                const caption = captions[figureNumber];
-                const figCaption = (caption) ? `<figcaption>${caption}</figcaption>` : '';
-                figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" />${figCaption}`;  
-                // figure should be placed after this paragraph and the other figures
-                paragraphElement.parentNode.insertBefore(figureEl, paragraphElement.nextSibling);       
+                if( figureNumber !== invalidFigureNumber ) {
+                    let figureEl = doc.createElement('figure'); 
+                    const imageURL = `${imageRootURL}/${annotationID}/${imageID}.jpg`
+                    const caption = captions[figureNumber];
+                    if( !caption ) writeLog(`Caption not found for Fig. ${figureNumber}`);
+                    const figCaption = (caption) ? `<figcaption>${caption}</figcaption>` : '';
+                    figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" />${figCaption}`;  
+                    // figure should be placed after this paragraph and the other figures
+                    paragraphElement.parentNode.insertBefore(figureEl, paragraphElement.nextSibling);           
+                } else {
+                    writeLog(`No figure number found in: ${anchorTag.innerHTML}`)
+                }
+            }
+        } else {
+            if( anchorTag.href.match( wikischolarRegX ) ) {
+                writeLog(`Wikischolars link detected: ${anchorTag.href}`)
             }
         }
     }
