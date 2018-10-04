@@ -9,7 +9,7 @@ const annotationDriveFile = './scripts/content_import/annotation-drive-map.json'
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
-const convertAnnotationLog = 'scripts/content_import/TEMP/convert_annotation.log';
+const convertAnnotationLog = 'scripts/content_import/TEMP/lizard.log';
 let logfile = null;
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
 const imageRootURL = "http://localhost:4000/bnf-ms-fr-640/images";
@@ -215,9 +215,11 @@ function locateAnnotationAssets() {
                     captionFile: captionFile,
                     illustrations: illustrations
                 });
+                const path = nodeToPath(textFileNode);
+                writeLog(`Found annotation: ${textFileNode.id} in ${googleShareName}${path}`);
             } else {
-                const path = nodeToPath(annotationRoot)
-                writeLog(`No annotation found. Must contain Text_* subfolder with exactly one docx file: ${path}`);
+                const path = nodeToPath(annotationRoot);
+                writeLog(`Annotation not found. Must contain Text_* subfolder with exactly one docx file: ${path}`);
             }
         });
     });
@@ -490,9 +492,14 @@ function main() {
     // TODO control mode with command line args
     const mode = 'scan';
 
+    if( mode === 'help' ) {
+        console.log("A helpful lizard.")
+        return;
+    }
+
     let date = new Date();
-    writeLog(`Annotation processing in ${mode} mode at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
-    writeLogSeperator();
+    writeLog(`Lizard running in ${mode} mode at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
+    writeLogSeperator();    
 
     switch( mode ) {
         case 'download': {
@@ -514,10 +521,6 @@ function main() {
             processAnnotations(annotationAssets);      
             }
             break;
-        case 'help':
-            // TODO stdout help
-            console.log("convert_annotation.js help")
-            break; 
     }
     
     // TODO index the annotations for search
@@ -525,7 +528,7 @@ function main() {
 
     date = new Date();
     writeLogSeperator();
-    writeLog(`Annotation processing finished at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
+    writeLog(`Lizard stopped running at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
 
     // Close log file
     fs.closeSync(logfile);
