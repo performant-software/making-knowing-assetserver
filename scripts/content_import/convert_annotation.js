@@ -5,12 +5,12 @@ const { JSDOM } = jsdom;
 
 const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
+const annotationDriveFile = './scripts/content_import/annotation-drive-map.json';
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
 const convertAnnotationLog = 'scripts/content_import/TEMP/convert_annotation.log';
 let logfile = null;
-
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
 const imageRootURL = "http://localhost:4000/bnf-ms-fr-640/images";
 // const annotationRootURL = "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/annotations";
@@ -24,17 +24,6 @@ const figureCitation = /[F|f]ig(\.|ure[\.]*)[\s]*[0-9]+/;
 const figureNumber = /[0-9]+/;
 const invalidFigureNumber = "XX";
 
-function downloadAssets() {
-    // TODO: Use rclone to create a map of the manuscript folder in google drive
-    // rclone lsjson --drive-shared-with-me -R google:"BnF Ms Fr 640/Annotations" > annotation-drive-map.json
-    const annotationDriveFile = './scripts/content_import/annotation-drive-map.json';
-    const annotationDriveJSON = fs.readFileSync(annotationDriveFile, "utf8");
-    const annotationDriveMap = JSON.parse(annotationDriveJSON);
-    const driveTreeRoot = createDriveTree(annotationDriveMap);
-    const annotationDriveAssets = locateAnnotationAssets( driveTreeRoot );
-    const annotationAssets = syncDriveAssets( annotationDriveAssets );
-    return annotationAssets;
-}
 
 function findLocalAssets() {
 
@@ -174,7 +163,13 @@ function createDriveTree(driveMap) {
     return rootNode;
 }
 
-function locateAnnotationAssets( driveTreeRoot ) {
+function locateAnnotationAssets() {
+
+    // TODO: Use rclone to create a map of the manuscript folder in google drive
+    // rclone lsjson --drive-shared-with-me -R google:"BnF Ms Fr 640/Annotations" > annotation-drive-map.json
+    const annotationDriveJSON = fs.readFileSync(annotationDriveFile, "utf8");
+    const annotationDriveMap = JSON.parse(annotationDriveJSON);
+    const driveTreeRoot = createDriveTree(annotationDriveMap);
 
     let annotationAssets = [];
 
@@ -206,13 +201,11 @@ function locateAnnotationAssets( driveTreeRoot ) {
                                 }
                             });
                         }
-                    } else {
-                        // TODO log that this asset folder has no sub folders
-                        writeLog(`this asset folder has no sub folders`);
-                    }
-                });    
+                    } 
+                });  
             } else {
-                // TODO log that this annotation folder has no sub folders
+                const path = nodeToPath(annotationRoot)
+                writeLog(`Annotation folder contains no subfolders: ${path}`);
             }
 
             if( textFileNode ) {
@@ -223,7 +216,8 @@ function locateAnnotationAssets( driveTreeRoot ) {
                     illustrations: illustrations
                 });
             } else {
-                // TODO log that this annotation folder didn't have a valid text file
+                const path = nodeToPath(annotationRoot)
+                writeLog(`No annotation found. Must contain Text_* subfolder with exactly one docx file: ${path}`);
             }
         });
     });
@@ -231,16 +225,16 @@ function locateAnnotationAssets( driveTreeRoot ) {
     return annotationAssets;
 }
 
+function nodeToPath( fileNode, path=[] ) {
+    path.push(fileNode.name);
+    if( fileNode.parent !== null ) {
+        return nodeToPath( fileNode.parent, path );
+    }
+    return path.reverse().join('/');
+}    
+
 function syncDriveAssets( driveAssets ) {
 
-    function nodeToPath( fileNode, path=[] ) {
-        path.push(fileNode.name);
-        if( fileNode.parent !== null ) {
-            return nodeToPath( fileNode.parent, path );
-        }
-        return path.reverse().join('/');
-    }    
-    
     // create local directory to store assets
     dirExists(baseDir);
 
@@ -314,12 +308,6 @@ function syncDriveFile( source, dest ) {
             throw `ERROR: Unable to download file from Google Drive: ${source}`;
         }
     });  
-}
-
-function webSafeFilename( unfilteredName ) {
-    // TODO what about extensions?
-    const filteredName = unfilteredName.replace(/[&?\/"'\s]/g, '_').toLowerCase()
-    return filteredName;
 }
 
 function processAnnotation( annotationAsset ) {
@@ -496,37 +484,42 @@ function writeLogSeperator() {
 
 function main() {
 
-    // processAnnotationHTML(
-    //     'nginx/webroot/annotations/10AcxQUvF9X-bFESeqAEjqEWFyrSchAbdk15o1OSVdRU.html',
-    //     '10AcxQUvF9X-bFESeqAEjqEWFyrSchAbdk15o1OSVdRU'
-    // );
-    // return;
-
     // Open log file
     logfile = fs.openSync(convertAnnotationLog, "w");
 
     // TODO control mode with command line args
-    const mode = 'process';
+    const mode = 'scan';
 
     let date = new Date();
     writeLog(`Annotation processing in ${mode} mode at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
     writeLogSeperator();
 
-    if( mode === 'download' ) {
-        downloadAssets();
+    switch( mode ) {
+        case 'download': {
+            const annotationDriveAssets = locateAnnotationAssets();
+            syncDriveAssets( annotationDriveAssets );
+            }
+            break;
+        case 'process': {
+            const annotationAssets = findLocalAssets();
+            processAnnotations(annotationAssets);
+            }
+            break;
+        case 'scan':
+            locateAnnotationAssets();
+            break;
+        case 'all': {
+            const annotationDriveAssets = locateAnnotationAssets();
+            const annotationAssets = syncDriveAssets( annotationDriveAssets );
+            processAnnotations(annotationAssets);      
+            }
+            break;
+        case 'help':
+            // TODO stdout help
+            console.log("convert_annotation.js help")
+            break; 
     }
-    if( mode === 'process' ) {
-        const annotationAssets = findLocalAssets();
-        processAnnotations(annotationAssets);
-    }
-    if( mode === 'all' ) {
-        const annotationAssets = downloadAssets();
-        processAnnotations(annotationAssets);
-    }
-    if( mode === 'help' ) {
-        // TODO stdout help
-    }
-
+    
     // TODO index the annotations for search
     // TODO The entry that this annotation is named after should get an outward link to this annotation.
 
