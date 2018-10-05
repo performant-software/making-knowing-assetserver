@@ -2,12 +2,14 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
+const searchIndex = require('./search_index');
 
 const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const annotationDriveFile = './scripts/content_import/annotation-drive-map.json';
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
+const targetSearchIndexDir = '../making-knowing/public/bnf-ms-fr-640/search-idx';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
 const convertAnnotationLog = 'scripts/content_import/TEMP/lizard.log';
 let logfile = null;
@@ -504,7 +506,7 @@ function main() {
     logfile = fs.openSync(convertAnnotationLog, "w");
 
     // TODO control mode with command line args
-    const mode = 'scan';
+    const mode = 'index';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
@@ -528,6 +530,9 @@ function main() {
             break;
         case 'scan':
             locateAnnotationAssets();
+            break;
+        case 'index':
+            searchIndex.generateAnnotationIndex(targetAnnotationDir, targetSearchIndexDir);
             break;
         case 'all': {
             const annotationDriveAssets = locateAnnotationAssets();

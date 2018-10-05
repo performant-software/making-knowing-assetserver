@@ -6,7 +6,10 @@ function main() {
     
     // let halberdTest = searchEdition.search('halberd','tl')
     // let fingerTest = searchEdition.search('finger','tl')
-    let chronicTest = searchEdition.search('chronic','tc')
+    // let chronicTest = searchEdition.search('chronic','tc')
+
+    let annoTest = searchEdition.search('Rerum Vulgarium','anno');
+
     console.log('done');
 }
   

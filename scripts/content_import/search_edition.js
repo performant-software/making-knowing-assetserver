@@ -6,6 +6,7 @@ require('lunr-languages/lunr.multi')(lunr)
 require("lunr-languages/lunr.fr")(lunr)
 
 const searchIndexDir = "./nginx/webroot/search-idx";
+const annoIndex = '../making-knowing/public/bnf-ms-fr-640/search-idx/annotation_search_index.js';
 
 const MAX_FRAGMENT_LENGTH = 12;
 const HIGHLIGHT_START = '<span class="highlight">';
@@ -91,7 +92,29 @@ function parseIDs( docID ) {
   return { recipeID: parts[0], folioID: parts[1] };
 }
 
-function search( searchTerm, transcriptionType ) {
+function search( searchTerm, searchType ) {
+  if( searchType === 'anno' ) {
+    return searchAnnotations( searchTerm );
+  } else {
+    return searchTranscriptions( searchTerm, searchType );
+  }
+}
+
+function searchAnnotations( searchTerm ) {
+
+  // make sure the folio dir exists
+  if( !fs.existsSync(annoIndex) ) {
+    console.log("Annotation search index not found.");
+    return null;
+  }
+
+  let searchIndexJSON = fs.readFileSync(annoIndex, "utf8");
+  let searchIndex = lunr.Index.load(JSON.parse(searchIndexJSON));
+
+  return searchIndex.search(searchTerm);
+}
+
+function searchTranscriptions( searchTerm, transcriptionType ) {
 
   let searchIndexFile = `${searchIndexDir}/${transcriptionType}_search_index.js`;
   let recipeBookFile = `${searchIndexDir}/${transcriptionType}_recipe_book.js`;
