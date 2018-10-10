@@ -171,9 +171,13 @@ function createDriveTree(driveMap) {
 
 function locateAnnotationAssets() {
 
-    // TODO: Use rclone to create a map of the manuscript folder in google drive
-    // rclone lsjson --drive-shared-with-me -R google:"BnF Ms Fr 640/Annotations" > annotation-drive-map.json
-    const annotationDriveJSON = fs.readFileSync(annotationDriveFile, "utf8");
+    // Use rclone to create a map of the manuscript folder in google drive
+    const buffer = execSync(`rclone lsjson --drive-shared-with-me -R google:"${googleShareName}"`, (error, stdout, stderr) => {
+        if (error !== null) {
+            throw `ERROR: Unable to list Google Drive: ${googleShareName}`;
+        } 
+    });  
+    const annotationDriveJSON = buffer.toString();
     const annotationDriveMap = JSON.parse(annotationDriveJSON);
     const driveTreeRoot = createDriveTree(annotationDriveMap);
 
@@ -506,7 +510,7 @@ function main() {
     logfile = fs.openSync(convertAnnotationLog, "w");
 
     // TODO control mode with command line args
-    const mode = 'index';
+    const mode = 'scan';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
@@ -542,7 +546,6 @@ function main() {
             break;
     }
     
-    // TODO index the annotations for search
     // TODO The entry that this annotation is named after should get an outward link to this annotation.
 
     date = new Date();
