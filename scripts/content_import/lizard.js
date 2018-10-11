@@ -2,17 +2,20 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
+const csv = require('csvtojson');
+const winston = require('winston');
+
 const searchIndex = require('./search_index');
 
 const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
-const annotationDriveFile = './scripts/content_import/annotation-drive-map.json';
+const annotationMetaDataCSV = "scripts/content_import/TEMP/annometa.csv";
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const targetSearchIndexDir = '../making-knowing/public/bnf-ms-fr-640/search-idx';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
 const convertAnnotationLog = 'scripts/content_import/TEMP/lizard.log';
-let logfile = null;
+let logger = null;
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
 const imageRootURL = "http://localhost:4000/bnf-ms-fr-640/images";
 // const annotationRootURL = "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/annotations";
@@ -27,6 +30,33 @@ const figureCitation = /[F|f]ig(\.|ure[\.]*)[\s]*[0-9]+/;
 const figureNumber = /[0-9]+/;
 const invalidFigureNumber = "XX";
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function loadAnnotationMetadata() {
+    return new Promise( (resolve) => {
+        const csvData = fs.readFileSync(annotationMetaDataCSV).toString();
+        let annotationMetadata = {};
+        csv().fromString(csvData).then( (tableObj) => {
+            tableObj.forEach( entry => {
+                let metaData = {
+                    id: entry['Annotation ID'],
+                    driveID: entry['UUID'],
+                    name: entry['Title'],
+                    semester: entry['Semester'],
+                    year: entry['Year'],
+                    theme: entry['Theme'],
+                    entryIDs: entry['Entry ID'],
+                    authors: entry['Author'],
+                    status: 'draft'
+                }
+                annotationMetadata[metaData.driveID] = metaData;
+            });
+            resolve(annotationMetadata);
+        });    
+    })
+}
 
 function findLocalAssets() {
 
@@ -74,36 +104,6 @@ function findLocalAssets() {
     });
 
     return annotationAssets;
-}
-
-function processAnnotations(annotationAssets) {
-
-    writeLog("Processing Annotations");
-    writeLogSeperator();
-
-    dirExists( targetAnnotationDir );
-    dirExists( targetImageDir );
-    dirExists( tempCaptionDir );
-
-    let annotationContent = [];
-    annotationAssets.forEach( asset => {
-        let annotation = processAnnotation(asset);
-        annotationContent.push(annotation);
-    })
-
-    let annotationManifest = {
-        title: "Annotations of BnF MS Fr. 640",
-        content: annotationContent
-    }
-
-    // write out annotation manifest
-    const annotationManifestFile = `${targetAnnotationDir}/annotations.json`;
-    fs.writeFile(annotationManifestFile, JSON.stringify(annotationManifest, null, 3), (err) => {
-        if (err) {
-          console.log(err);
-          writeLog(err);
-        } 
-    });
 }
 
 function createDriveTree(driveMap) {
@@ -215,7 +215,7 @@ function locateAnnotationAssets() {
                 });  
             } else {
                 const path = nodeToPath(annotationRoot)
-                writeLog(`Annotation folder contains no subfolders: ${path}`);
+                logger.info(`Annotation folder contains no subfolders: ${path}`);
             }
 
             if( textFileNode ) {
@@ -226,10 +226,10 @@ function locateAnnotationAssets() {
                     illustrations: illustrations
                 });
                 const path = nodeToPath(textFileNode);
-                writeLog(`Found annotation: ${textFileNode.id} in ${googleShareName}${path}`);
+                logger.info(`Found annotation: ${textFileNode.id} in ${googleShareName}${path}`);
             } else {
                 const path = nodeToPath(annotationRoot);
-                writeLog(`Annotation not found. Must contain Text_* subfolder with exactly one docx file: ${path}`);
+                logger.info(`Annotation not found. Must contain Text_* subfolder with exactly one docx file: ${path}`);
             }
         });
     });
@@ -322,7 +322,43 @@ function syncDriveFile( source, dest ) {
     });  
 }
 
-function processAnnotation( annotationAsset ) {
+
+function processAnnotations(annotationAssets, annotationMetadata) {
+
+    logger.info("Processing Annotations");
+    logSeperator();
+
+    dirExists( targetAnnotationDir );
+    dirExists( targetImageDir );
+    dirExists( tempCaptionDir );
+
+    let annotationContent = [];
+    annotationAssets.forEach( asset => {
+        const metadata = annotationMetadata[asset.id];
+        if( metadata ) {
+            let annotation = processAnnotation(asset,metadata);
+            annotationContent.push(annotation);    
+        } else {
+            logger.info(`Unable to process annotation, metadata not found: ${asset.id}`);
+        }
+    })
+
+    let annotationManifest = {
+        title: "Annotations of BnF MS Fr. 640",
+        content: annotationContent
+    }
+
+    // write out annotation manifest
+    const annotationManifestFile = `${targetAnnotationDir}/annotations.json`;
+    fs.writeFile(annotationManifestFile, JSON.stringify(annotationManifest, null, 3), (err) => {
+        if (err) {
+          console.log(err);
+          logger.info(err);
+        } 
+    });
+}
+
+function processAnnotation( annotationAsset, metadata ) {
 
     function convertToHTML( source, target ) {
         execSync(`pandoc -f docx -t html "${source}" > "${target}"`, (error, stdout, stderr) => {
@@ -334,7 +370,7 @@ function processAnnotation( annotationAsset ) {
         }); 
     }
 
-    const annotationID = annotationAsset.id;
+    const annotationID = metadata.id;
     const annotationHTMLFile = `${targetAnnotationDir}/${annotationID}.html`;    
 
     // Convert docx file to html
@@ -352,38 +388,18 @@ function processAnnotation( annotationAsset ) {
     const illustrationsDir = `${targetImageDir}/${annotationID}`;
     dirExists( illustrationsDir );
     annotationAsset.illustrations.forEach( illustration => {
-        const sourceFile = `${baseDir}/${annotationID}/illustrations/${illustration}`
+        const sourceFile = `${baseDir}/${annotationAsset.id}/illustrations/${illustration}`
         const targetFile = `${illustrationsDir}/${illustration}`
         fs.copyFileSync( sourceFile, targetFile );
     })
 
     // Take the pandoc output and transform it into final annotation html
     processAnnotationHTML(annotationHTMLFile, annotationID, captions);
-    
-    // TODO Manifest Data Record
-    // {
-    //     "id": "0BwJi-u8sfkVDfjlwTEhJVkxJNlFLcS1temhqeWU1VmhJbDdjMHNRYjR1WkQ0WmVoNGc5U1k",
-    //     "name": "\"Stucco for Molding\", fol. 29r",
-    //     "contentURL": "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/annotations/0BwJi-u8sfkVDfjlwTEhJVkxJNlFLcS1temhqeWU1VmhJbDdjMHNRYjR1WkQ0WmVoNGc5U1k.html",
-    //     "folio": "029r",
-    //     "author": "Nina Elizondo-Garza",
-    //     "abstract": "Abstract: Fol. 29r_1 describes a method for creating stucco which the author-practitioner claims is versatile and inexpensive. This annotation conducts a material-based analysis of the entry, including a reconstruction following the instructions in this entry and a historical investigation of ancient and early modern stucco recipes and stucco use, to better situate the author-practitioner within his context. These comparisons reveal that the author-practitioner's recipe is apparently unusual. Moreover, investigating stucco highlights the author-practitioner's interest in ornamentation, his focus on using pre-existing patterns rather than creating new ones, and his possible first-hand experiences of making domestic and ephemeral decorative art.",
-    //     "thumbnail": "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/figures/annotations/0BwJi-u8sfkVDfjlwTEhJVkxJNlFLcS1temhqeWU1VmhJbDdjMHNRYjR1WkQ0WmVoNGc5U1k.jpg",
-    //     "status": "draft"
-    // }
 
-    const annotation = {
-        id: annotationID,
-        name: annotationID,
-        contentURL: `${annotationRootURL}/${annotationID}.html`,
-        folio: "001r",
-        author: "AUTHOR NAME",
-        abstract: "Lorem ipsum",
-        thumbnail: "",        
-        status: "draft"
-    };
-    
-    return annotation;
+    return {
+        ...metadata,
+        contentURL: `${annotationRootURL}/${annotationID}.html`
+    };    
 }
 
 // returns a hash of the captions keyed to figure number
@@ -409,7 +425,7 @@ function processCaptions( captionHTMLFile ) {
 
 function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
 
-    writeLog(`Processing annotation ${annotationID}`);
+    logger.info(`Processing annotation ${annotationID}`);
     // load document 
     let html = fs.readFileSync( annotationHTMLFile, "utf8");
     let htmlDOM = new JSDOM(html);
@@ -443,18 +459,18 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
                     let figureEl = doc.createElement('figure'); 
                     const imageURL = `${imageRootURL}/${annotationID}/${imageID}.jpg`
                     const caption = captions[figureNumber];
-                    if( !caption ) writeLog(`Caption not found for Fig. ${figureNumber}`);
+                    if( !caption ) logger.info(`Caption not found for Fig. ${figureNumber}`);
                     const figCaption = (caption) ? `<figcaption>${caption}</figcaption>` : '';
                     figureEl.innerHTML = `<img src="${imageURL}" alt="Figure" />${figCaption}`;  
                     // figure should be placed after this paragraph and the other figures
                     paragraphElement.parentNode.insertBefore(figureEl, paragraphElement.nextSibling);           
                 } else {
-                    writeLog(`No figure number found in: ${anchorTag.innerHTML}`)
+                    logger.info(`No figure number found in: ${anchorTag.innerHTML}`)
                 }
             }
         } else {
             if( anchorTag.href.match( wikischolarRegX ) ) {
-                writeLog(`Wikischolars link detected: ${anchorTag.href}`)
+                logger.info(`Wikischolars link detected: ${anchorTag.href}`)
             }
         }
     }
@@ -496,21 +512,29 @@ function extractFigureNumber( figureText ) {
     return invalidFigureNumber;
 }
 
-function writeLog(logMessage) {
-    fs.writeSync(logfile, logMessage+'\n');
+function logSeperator() {
+    logger.info('==============================');
 }
 
-function writeLogSeperator() {
-    fs.writeSync(logfile, '==============================\n');
+function setupLogging() {
+    if( fs.existsSync(convertAnnotationLog)) {
+        fs.unlinkSync(convertAnnotationLog)
+    }
+    logger = winston.createLogger({
+        format: winston.format.printf(info => { return `${info.message}` }),
+        transports: [
+          new winston.transports.Console(),
+          new winston.transports.File({ filename: convertAnnotationLog })
+        ]
+    });
 }
 
 function main() {
 
-    // Open log file
-    logfile = fs.openSync(convertAnnotationLog, "w");
+    setupLogging();
 
     // TODO control mode with command line args
-    const mode = 'scan';
+    const mode = 'process';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
@@ -518,8 +542,8 @@ function main() {
     }
 
     let date = new Date();
-    writeLog(`Lizard running in ${mode} mode at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
-    writeLogSeperator();    
+    logger.info(`Lizard running in ${mode} mode at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
+    logSeperator();    
 
     switch( mode ) {
         case 'download': {
@@ -529,7 +553,9 @@ function main() {
             break;
         case 'process': {
             const annotationAssets = findLocalAssets();
-            processAnnotations(annotationAssets);
+            loadAnnotationMetadata().then( (annotationMetadata) => {
+                processAnnotations(annotationAssets,annotationMetadata);
+            });
             }
             break;
         case 'scan':
@@ -541,19 +567,11 @@ function main() {
         case 'all': {
             const annotationDriveAssets = locateAnnotationAssets();
             const annotationAssets = syncDriveAssets( annotationDriveAssets );
-            processAnnotations(annotationAssets);      
+            const annotationMetadata = loadAnnotationMetadata();
+            processAnnotations(annotationAssets,annotationMetadata);
             }
             break;
-    }
-    
-    // TODO The entry that this annotation is named after should get an outward link to this annotation.
-
-    date = new Date();
-    writeLogSeperator();
-    writeLog(`Lizard stopped running at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
-
-    // Close log file
-    fs.closeSync(logfile);
+    }    
 }
 
 ///// RUN THE SCRIPT
