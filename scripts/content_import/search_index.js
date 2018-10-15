@@ -130,12 +130,17 @@ var generateAnnotationIndex = function generateAnnotationIndex( annotationPath, 
       // ignore hidden directories
       if( annotationHTMLFile.startsWith('.') ) return;
 
+      // ignore manifest
+      if( annotationHTMLFile === 'annotations.json' ) return;
+
       const html = fs.readFileSync( `${annotationPath}/${annotationHTMLFile}`, "utf8");
       const content = parseAnnotation(html);
 
+      const annotationID = annotationHTMLFile.split('.')[0];
+
       // create a search index document
       const annotationRecord = { 
-        id: annotationHTMLFile,
+        id: annotationID,
         content: content
       };
 

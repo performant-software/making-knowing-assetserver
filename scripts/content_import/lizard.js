@@ -534,7 +534,7 @@ function main() {
     setupLogging();
 
     // TODO control mode with command line args
-    const mode = 'process';
+    const mode = 'index';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
