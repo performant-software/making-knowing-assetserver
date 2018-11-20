@@ -10,6 +10,7 @@ const searchIndex = require('./search_index');
 const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const annotationMetaDataCSV = "scripts/content_import/TEMP/annometa.csv";
+const cachedAnnotationDriveScan = "scripts/content_import/TEMP/cachedScanFile.json";
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const targetSearchIndexDir = '../making-knowing/public/bnf-ms-fr-640/search-idx';
@@ -169,15 +170,20 @@ function createDriveTree(driveMap) {
     return rootNode;
 }
 
-function locateAnnotationAssets() {
+function locateAnnotationAssets(useCache) {
 
     // Use rclone to create a map of the manuscript folder in google drive
-    const buffer = execSync(`rclone lsjson --drive-shared-with-me -R google:"${googleShareName}"`, (error, stdout, stderr) => {
-        if (error !== null) {
-            throw `ERROR: Unable to list Google Drive: ${googleShareName}`;
-        } 
-    });  
-    const annotationDriveJSON = buffer.toString();
+    let annotationDriveJSON;
+    if( useCache )  {
+        annotationDriveJSON = fs.readFileSync(cachedAnnotationDriveScan, "utf8");
+    } else {
+        const buffer = execSync(`rclone lsjson --drive-shared-with-me -R google:"${googleShareName}"`, (error, stdout, stderr) => {
+            if (error !== null) {
+                throw `ERROR: Unable to list Google Drive: ${googleShareName}`;
+            } 
+        });      
+        annotationDriveJSON = buffer.toString();
+    }
     const annotationDriveMap = JSON.parse(annotationDriveJSON);
     const driveTreeRoot = createDriveTree(annotationDriveMap);
 
@@ -311,9 +317,10 @@ function dirExists( dir ) {
 
 function syncDriveFile( source, dest ) {
     // escape all quotes in source path
-    const escSource = source.replace(/"/g, '\\"').replace(/'/g, "\\'")
-    console.log(`Downloading: ${source}`);
-    execSync(`rclone --drive-shared-with-me sync google:"${escSource}" "${dest}"`, (error, stdout, stderr) => {
+    const escSource = source.replace(/"/g, '\\"').replace(/'/g, "\\'")  
+    const cmd = `rclone --drive-shared-with-me sync google:"${escSource}" "${dest}"`;
+    logger.info(cmd);
+    execSync(cmd, (error, stdout, stderr) => {
         console.log(`${stdout}`);
         console.log(`${stderr}`);
         if (error !== null) {
@@ -527,6 +534,12 @@ function setupLogging() {
           new winston.transports.File({ filename: convertAnnotationLog })
         ]
     });
+
+    process.on('uncaughtException', function(err) {
+        logger.log('error', `Fatal exception killed lizard:\n${err}`, err, function(err, level, msg, meta) {
+            process.exit(1);
+        });
+    });
 }
 
 function main() {
@@ -534,7 +547,7 @@ function main() {
     setupLogging();
 
     // TODO control mode with command line args
-    const mode = 'index';
+    const mode = 'download';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
@@ -547,7 +560,7 @@ function main() {
 
     switch( mode ) {
         case 'download': {
-            const annotationDriveAssets = locateAnnotationAssets();
+            const annotationDriveAssets = locateAnnotationAssets(true);
             syncDriveAssets( annotationDriveAssets );
             }
             break;
@@ -559,7 +572,7 @@ function main() {
             }
             break;
         case 'scan':
-            locateAnnotationAssets();
+            locateAnnotationAssets(false);
             break;
         case 'index':
             searchIndex.generateAnnotationIndex(targetAnnotationDir, targetSearchIndexDir);
