@@ -15,6 +15,7 @@ const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations'
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const targetSearchIndexDir = '../making-knowing/public/bnf-ms-fr-640/search-idx';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
+const tempAbstractDir = 'scripts/content_import/TEMP/abstract';
 const convertAnnotationLog = 'scripts/content_import/TEMP/lizard.log';
 let logger = null;
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
@@ -85,6 +86,9 @@ function findLocalAssets() {
         // record caption file
         const captionFile = findDocinDir(`${baseDir}/${annotationDir}/captions`)
 
+        // record abstract file
+        const abstractFile = findDocinDir(`${baseDir}/${annotationDir}/abstract`)
+
         // record illustrations
         const illustrationDir = `${baseDir}/${annotationDir}/illustrations`;
         let illustrations = [];
@@ -98,9 +102,10 @@ function findLocalAssets() {
 
         annotationAssets.push({
             id: annotationDir,
-            textFile: textFile,
-            captionFile: captionFile,
-            illustrations: illustrations
+            textFile,
+            captionFile,
+            abstractFile,
+            illustrations
         });
     });
 
@@ -193,6 +198,7 @@ function locateAnnotationAssets(useCache) {
         semester.children.forEach( annotationRoot => {
             let textFileNode = null;
             let captionFile = null;
+            let abstractFile = null;
             let illustrations = [];
             if( annotationRoot.children ) {
                 annotationRoot.children.forEach( assetFolder => {
@@ -205,7 +211,9 @@ function locateAnnotationAssets(useCache) {
                                     textFileNode = fileNode;
                                 } else if( assetFolder.name.includes('Captions_') ) {
                                     captionFile = fileNode;
-                                }        
+                                } else if( assetFolder.name.includes('Abstract_') ) {
+                                    abstractFile = fileNode;
+                                }       
                             }
                         }
 
@@ -229,6 +237,7 @@ function locateAnnotationAssets(useCache) {
                     id: textFileNode.id,
                     textFile: textFileNode,
                     captionFile: captionFile,
+                    abstractFile: abstractFile,
                     illustrations: illustrations
                 });
                 const path = nodeToPath(textFileNode);
@@ -272,12 +281,24 @@ function syncDriveAssets( driveAssets ) {
         const captionsDir = `${annotationDir}/captions`;
         dirExists(captionsDir);
 
+        // create abstract dir
+        const abstractDir = `${annotationDir}/abstract`;
+        dirExists(abstractDir);
+
         // this file is optional
         let captionFileDest = null;
         if( driveAsset.captionFile ) {
             const captionFileSrc = `${googleShareName}${nodeToPath(driveAsset.captionFile)}`;
             captionFileDest = `${captionsDir}/${driveAsset.captionFile.name}`; 
             syncDriveFile(captionFileSrc, captionsDir);
+        }
+
+        // abstract is optional
+        let abstractFileDest = null;
+        if( driveAsset.abstractFile ) {
+            const abstractFileSrc = `${googleShareName}${nodeToPath(driveAsset.abstractFile)}`;
+            abstractFileDest = `${abstractDir}/${driveAsset.abstractFile.name}`; 
+            syncDriveFile(abstractFileSrc, abstractDir);
         }
 
         // make the illustrations dir 
@@ -299,6 +320,7 @@ function syncDriveAssets( driveAssets ) {
             id: driveAsset.id,
             textFile: textFileDest,
             captionFile: captionFileDest,
+            abstractFile: abstractFileDest,
             illustrations: illustrations
         })
     });
@@ -338,6 +360,7 @@ function processAnnotations(annotationAssets, annotationMetadata) {
     dirExists( targetAnnotationDir );
     dirExists( targetImageDir );
     dirExists( tempCaptionDir );
+    dirExists( tempAbstractDir );
 
     let annotationContent = [];
     annotationAssets.forEach( asset => {
@@ -390,6 +413,14 @@ function processAnnotation( annotationAsset, metadata ) {
         convertToHTML( annotationAsset.captionFile, captionHTMLFile );  
         captions = processCaptions(captionHTMLFile);
     }
+
+    // Convert the captions file if it exists and extract the captions
+    let abstract = "";
+    if( annotationAsset.abstractFile ) {
+        const abstractHTMLFile = `${tempAbstractDir}/${annotationID}.html`;  
+        convertToHTML( annotationAsset.abstractFile, abstractHTMLFile );  
+        abstract = processAbstract(abstractHTMLFile);
+    }
     
     // Make a directory for the illustrations and copy them to there
     const illustrationsDir = `${targetImageDir}/${annotationID}`;
@@ -405,6 +436,7 @@ function processAnnotation( annotationAsset, metadata ) {
 
     return {
         ...metadata,
+        abstract,
         contentURL: `${annotationRootURL}/${annotationID}.html`
     };    
 }
@@ -428,6 +460,11 @@ function processCaptions( captionHTMLFile ) {
     }
 
     return captions;
+}
+
+// returns the HTML of the abstract
+function processAbstract( abstractHTMLFile ) {
+    return fs.readFileSync( abstractHTMLFile, "utf8");
 }
 
 function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
@@ -542,12 +579,20 @@ function setupLogging() {
     });
 }
 
+function quickFix( driveAssets ) {
+    driveAssets.forEach( driveAsset => {
+        const annotationDir = `${baseDir}/${driveAsset.id}`;
+        const abstractDir = `${annotationDir}/abstract`;
+        dirExists(abstractDir);
+    });
+}
+
 function main() {
 
     setupLogging();
 
     // TODO control mode with command line args
-    const mode = 'download';
+    const mode = 'process';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
@@ -559,6 +604,11 @@ function main() {
     logSeperator();    
 
     switch( mode ) {
+        case 'fix': {
+            const annotationDriveAssets = locateAnnotationAssets(true);
+            quickFix(annotationDriveAssets);
+            }
+            break;
         case 'download': {
             const annotationDriveAssets = locateAnnotationAssets(true);
             syncDriveAssets( annotationDriveAssets );
