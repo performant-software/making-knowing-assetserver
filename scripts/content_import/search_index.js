@@ -107,6 +107,57 @@ function createSearchIndex( folioPath, indexPath, transcriptionType ) {
   });
 }
 
+function parseAnnotation( html ) {
+  let htmlDOM = new JSDOM(html);
+  let doc = htmlDOM.window.document;
+  var div = doc.createElement("div");
+  div.innerHTML = html;
+  var text = div.textContent || div.innerText || "";
+  return text;
+}
+
+var generateAnnotationIndex = function generateAnnotationIndex( annotationPath, indexPath ) {
+
+  // open an index for writing, output to searchIndexDir dir
+  var searchIndex = lunr(function () {
+    this.ref('id')
+    this.field('content')
+    this.metadataWhitelist = ['position'];
+
+    let annotations = fs.readdirSync(annotationPath);
+    annotations.forEach( annotationHTMLFile => {
+
+      // ignore hidden directories
+      if( annotationHTMLFile.startsWith('.') ) return;
+
+      // ignore manifest
+      if( annotationHTMLFile === 'annotations.json' ) return;
+
+      const html = fs.readFileSync( `${annotationPath}/${annotationHTMLFile}`, "utf8");
+      const content = parseAnnotation(html);
+
+      const annotationID = annotationHTMLFile.split('.')[0];
+
+      // create a search index document
+      const annotationRecord = { 
+        id: annotationID,
+        content: content
+      };
+
+      // add record to lunr index
+      this.add( annotationRecord );
+
+    }, this);
+  });
+
+  let searchIndexFile = `${indexPath}/annotation_search_index.js`;
+
+  // write index to file
+  fs.writeFileSync(searchIndexFile, JSON.stringify(searchIndex), (err) => {
+    if (err) throw err;
+  });
+}
+
 var generate = function generate(folioPath,indexPath) {  
   createSearchIndex(folioPath, indexPath, 'tl');
   createSearchIndex(folioPath, indexPath, 'tc');
@@ -115,3 +166,4 @@ var generate = function generate(folioPath,indexPath) {
 
 // EXPORTS /////////////
 module.exports.generate = generate;
+module.exports.generateAnnotationIndex = generateAnnotationIndex;
