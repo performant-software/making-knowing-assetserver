@@ -16,6 +16,7 @@ const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const targetSearchIndexDir = '../making-knowing/public/bnf-ms-fr-640/search-idx';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
 const tempAbstractDir = 'scripts/content_import/TEMP/abstract';
+const tempBiblioDir = 'scripts/content_import/TEMP/abstract';
 const convertAnnotationLog = 'scripts/content_import/TEMP/lizard.log';
 let logger = null;
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
@@ -89,6 +90,9 @@ function findLocalAssets() {
         // record abstract file
         const abstractFile = findDocinDir(`${baseDir}/${annotationDir}/abstract`)
 
+        // record bibliography file
+        const biblioFile = findDocinDir(`${baseDir}/${annotationDir}/bibliography`)
+
         // record illustrations
         const illustrationDir = `${baseDir}/${annotationDir}/illustrations`;
         let illustrations = [];
@@ -105,6 +109,7 @@ function findLocalAssets() {
             textFile,
             captionFile,
             abstractFile,
+            biblioFile,
             illustrations
         });
     });
@@ -199,6 +204,7 @@ function locateAnnotationAssets(useCache) {
             let textFileNode = null;
             let captionFile = null;
             let abstractFile = null;
+            let biblioFile = null;
             let illustrations = [];
             if( annotationRoot.children ) {
                 annotationRoot.children.forEach( assetFolder => {
@@ -213,6 +219,8 @@ function locateAnnotationAssets(useCache) {
                                     captionFile = fileNode;
                                 } else if( assetFolder.name.includes('Abstract_') ) {
                                     abstractFile = fileNode;
+                                } else if( assetFolder.name.includes('Bibliography_') ) {
+                                    biblioFile = fileNode;
                                 }       
                             }
                         }
@@ -238,6 +246,7 @@ function locateAnnotationAssets(useCache) {
                     textFile: textFileNode,
                     captionFile: captionFile,
                     abstractFile: abstractFile,
+                    biblioFile: biblioFile,
                     illustrations: illustrations
                 });
                 const path = nodeToPath(textFileNode);
@@ -284,6 +293,10 @@ function syncDriveAssets( driveAssets ) {
         // create abstract dir
         const abstractDir = `${annotationDir}/abstract`;
         dirExists(abstractDir);
+        
+        // create bibliography dir
+        const biblioDir = `${annotationDir}/bibliography`;
+        dirExists(biblioDir);
 
         // this file is optional
         let captionFileDest = null;
@@ -299,6 +312,14 @@ function syncDriveAssets( driveAssets ) {
             const abstractFileSrc = `${googleShareName}${nodeToPath(driveAsset.abstractFile)}`;
             abstractFileDest = `${abstractDir}/${driveAsset.abstractFile.name}`; 
             syncDriveFile(abstractFileSrc, abstractDir);
+        }
+        
+        // bibliography is optional
+        let biblioFileDest = null;
+        if( driveAsset.biblioFile ) {
+            const biblioFileSrc = `${googleShareName}${nodeToPath(driveAsset.biblioFile)}`;
+            biblioFileDest = `${biblioDir}/${driveAsset.biblioFile.name}`; 
+            syncDriveFile(biblioFileSrc, biblioDir);
         }
 
         // make the illustrations dir 
@@ -321,6 +342,7 @@ function syncDriveAssets( driveAssets ) {
             textFile: textFileDest,
             captionFile: captionFileDest,
             abstractFile: abstractFileDest,
+            biblioFile: biblioFileDest,
             illustrations: illustrations
         })
     });
@@ -339,7 +361,7 @@ function dirExists( dir ) {
 
 function syncDriveFile( source, dest ) {
     // escape all quotes in source path
-    const escSource = source.replace(/"/g, '\\"').replace(/'/g, "\\'")  
+    const escSource = source.replace(/"/g, '\\"')  
     const cmd = `rclone --drive-shared-with-me sync google:"${escSource}" "${dest}"`;
     logger.info(cmd);
     execSync(cmd, (error, stdout, stderr) => {
@@ -391,7 +413,8 @@ function processAnnotations(annotationAssets, annotationMetadata) {
 function processAnnotation( annotationAsset, metadata ) {
 
     function convertToHTML( source, target ) {
-        execSync(`pandoc -f docx -t html "${source}" > "${target}"`, (error, stdout, stderr) => {
+        const escSource = source.replace(/"/g, '\\"')  
+        execSync(`pandoc -f docx -t html "${escSource}" > "${target}"`, (error, stdout, stderr) => {
             console.log(`${stdout}`);
             console.log(`${stderr}`);
             if (error !== null) {
@@ -414,12 +437,20 @@ function processAnnotation( annotationAsset, metadata ) {
         captions = processCaptions(captionHTMLFile);
     }
 
-    // Convert the captions file if it exists and extract the captions
+    // Extract the abstract, if it exists
     let abstract = "";
     if( annotationAsset.abstractFile ) {
         const abstractHTMLFile = `${tempAbstractDir}/${annotationID}.html`;  
         convertToHTML( annotationAsset.abstractFile, abstractHTMLFile );  
-        abstract = processAbstract(abstractHTMLFile);
+        abstract = fs.readFileSync( abstractHTMLFile, "utf8");
+    }
+
+    // Extract the bibliography
+    let biblio = null;
+    if( annotationAsset.biblioFile ) {
+        const biblioHTMLFile = `${tempBiblioDir}/${annotationID}.html`;  
+        convertToHTML( annotationAsset.biblioFile, biblioHTMLFile );  
+        biblio = fs.readFileSync( biblioHTMLFile, "utf8");
     }
     
     // Make a directory for the illustrations and copy them to there
@@ -432,7 +463,7 @@ function processAnnotation( annotationAsset, metadata ) {
     })
 
     // Take the pandoc output and transform it into final annotation html
-    processAnnotationHTML(annotationHTMLFile, annotationID, captions);
+    processAnnotationHTML(annotationHTMLFile, annotationID, captions, biblio);
 
     return {
         ...metadata,
@@ -462,12 +493,7 @@ function processCaptions( captionHTMLFile ) {
     return captions;
 }
 
-// returns the HTML of the abstract
-function processAbstract( abstractHTMLFile ) {
-    return fs.readFileSync( abstractHTMLFile, "utf8");
-}
-
-function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
+function processAnnotationHTML( annotationHTMLFile, annotationID, captions, biblio ) {
 
     logger.info(`Processing annotation ${annotationID}`);
     // load document 
@@ -524,6 +550,14 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
         let [oldEl, newEl] = replacement;
         oldEl.replaceWith(newEl);
     });
+
+    // Now append the bibliography
+    if( biblio ) {
+        let biblioEl = doc.createElement('div'); 
+        biblioEl.innerHTML = biblio;
+        let body = doc.getElementsByTagName('body')[0];
+        body.append(biblioEl);
+    }
 
     // TODO Tables
     // - change first row of the table to be a th instead of tr
@@ -582,8 +616,8 @@ function setupLogging() {
 function quickFix( driveAssets ) {
     driveAssets.forEach( driveAsset => {
         const annotationDir = `${baseDir}/${driveAsset.id}`;
-        const abstractDir = `${annotationDir}/abstract`;
-        dirExists(abstractDir);
+        const biblioDir = `${annotationDir}/bibliography`;
+        dirExists(biblioDir);
     });
 }
 
