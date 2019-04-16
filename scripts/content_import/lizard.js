@@ -15,6 +15,8 @@ const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations'
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const targetSearchIndexDir = '../making-knowing/public/bnf-ms-fr-640/search-idx';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
+const tempAbstractDir = 'scripts/content_import/TEMP/abstract';
+const tempBiblioDir = 'scripts/content_import/TEMP/abstract';
 const convertAnnotationLog = 'scripts/content_import/TEMP/lizard.log';
 let logger = null;
 const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
@@ -85,6 +87,12 @@ function findLocalAssets() {
         // record caption file
         const captionFile = findDocinDir(`${baseDir}/${annotationDir}/captions`)
 
+        // record abstract file
+        const abstractFile = findDocinDir(`${baseDir}/${annotationDir}/abstract`)
+
+        // record bibliography file
+        const biblioFile = findDocinDir(`${baseDir}/${annotationDir}/bibliography`)
+
         // record illustrations
         const illustrationDir = `${baseDir}/${annotationDir}/illustrations`;
         let illustrations = [];
@@ -98,9 +106,11 @@ function findLocalAssets() {
 
         annotationAssets.push({
             id: annotationDir,
-            textFile: textFile,
-            captionFile: captionFile,
-            illustrations: illustrations
+            textFile,
+            captionFile,
+            abstractFile,
+            biblioFile,
+            illustrations
         });
     });
 
@@ -193,6 +203,8 @@ function locateAnnotationAssets(useCache) {
         semester.children.forEach( annotationRoot => {
             let textFileNode = null;
             let captionFile = null;
+            let abstractFile = null;
+            let biblioFile = null;
             let illustrations = [];
             if( annotationRoot.children ) {
                 annotationRoot.children.forEach( assetFolder => {
@@ -205,7 +217,11 @@ function locateAnnotationAssets(useCache) {
                                     textFileNode = fileNode;
                                 } else if( assetFolder.name.includes('Captions_') ) {
                                     captionFile = fileNode;
-                                }        
+                                } else if( assetFolder.name.includes('Abstract_') ) {
+                                    abstractFile = fileNode;
+                                } else if( assetFolder.name.includes('Bibliography_') ) {
+                                    biblioFile = fileNode;
+                                }       
                             }
                         }
 
@@ -229,6 +245,8 @@ function locateAnnotationAssets(useCache) {
                     id: textFileNode.id,
                     textFile: textFileNode,
                     captionFile: captionFile,
+                    abstractFile: abstractFile,
+                    biblioFile: biblioFile,
                     illustrations: illustrations
                 });
                 const path = nodeToPath(textFileNode);
@@ -272,12 +290,36 @@ function syncDriveAssets( driveAssets ) {
         const captionsDir = `${annotationDir}/captions`;
         dirExists(captionsDir);
 
+        // create abstract dir
+        const abstractDir = `${annotationDir}/abstract`;
+        dirExists(abstractDir);
+        
+        // create bibliography dir
+        const biblioDir = `${annotationDir}/bibliography`;
+        dirExists(biblioDir);
+
         // this file is optional
         let captionFileDest = null;
         if( driveAsset.captionFile ) {
             const captionFileSrc = `${googleShareName}${nodeToPath(driveAsset.captionFile)}`;
             captionFileDest = `${captionsDir}/${driveAsset.captionFile.name}`; 
             syncDriveFile(captionFileSrc, captionsDir);
+        }
+
+        // abstract is optional
+        let abstractFileDest = null;
+        if( driveAsset.abstractFile ) {
+            const abstractFileSrc = `${googleShareName}${nodeToPath(driveAsset.abstractFile)}`;
+            abstractFileDest = `${abstractDir}/${driveAsset.abstractFile.name}`; 
+            syncDriveFile(abstractFileSrc, abstractDir);
+        }
+        
+        // bibliography is optional
+        let biblioFileDest = null;
+        if( driveAsset.biblioFile ) {
+            const biblioFileSrc = `${googleShareName}${nodeToPath(driveAsset.biblioFile)}`;
+            biblioFileDest = `${biblioDir}/${driveAsset.biblioFile.name}`; 
+            syncDriveFile(biblioFileSrc, biblioDir);
         }
 
         // make the illustrations dir 
@@ -299,6 +341,8 @@ function syncDriveAssets( driveAssets ) {
             id: driveAsset.id,
             textFile: textFileDest,
             captionFile: captionFileDest,
+            abstractFile: abstractFileDest,
+            biblioFile: biblioFileDest,
             illustrations: illustrations
         })
     });
@@ -317,7 +361,7 @@ function dirExists( dir ) {
 
 function syncDriveFile( source, dest ) {
     // escape all quotes in source path
-    const escSource = source.replace(/"/g, '\\"').replace(/'/g, "\\'")  
+    const escSource = source.replace(/"/g, '\\"')  
     const cmd = `rclone --drive-shared-with-me sync google:"${escSource}" "${dest}"`;
     logger.info(cmd);
     execSync(cmd, (error, stdout, stderr) => {
@@ -338,6 +382,7 @@ function processAnnotations(annotationAssets, annotationMetadata) {
     dirExists( targetAnnotationDir );
     dirExists( targetImageDir );
     dirExists( tempCaptionDir );
+    dirExists( tempAbstractDir );
 
     let annotationContent = [];
     annotationAssets.forEach( asset => {
@@ -368,7 +413,8 @@ function processAnnotations(annotationAssets, annotationMetadata) {
 function processAnnotation( annotationAsset, metadata ) {
 
     function convertToHTML( source, target ) {
-        execSync(`pandoc -f docx -t html "${source}" > "${target}"`, (error, stdout, stderr) => {
+        const escSource = source.replace(/"/g, '\\"')  
+        execSync(`pandoc -f docx -t html "${escSource}" > "${target}"`, (error, stdout, stderr) => {
             console.log(`${stdout}`);
             console.log(`${stderr}`);
             if (error !== null) {
@@ -390,6 +436,22 @@ function processAnnotation( annotationAsset, metadata ) {
         convertToHTML( annotationAsset.captionFile, captionHTMLFile );  
         captions = processCaptions(captionHTMLFile);
     }
+
+    // Extract the abstract, if it exists
+    let abstract = "";
+    if( annotationAsset.abstractFile ) {
+        const abstractHTMLFile = `${tempAbstractDir}/${annotationID}.html`;  
+        convertToHTML( annotationAsset.abstractFile, abstractHTMLFile );  
+        abstract = fs.readFileSync( abstractHTMLFile, "utf8");
+    }
+
+    // Extract the bibliography
+    let biblio = null;
+    if( annotationAsset.biblioFile ) {
+        const biblioHTMLFile = `${tempBiblioDir}/${annotationID}.html`;  
+        convertToHTML( annotationAsset.biblioFile, biblioHTMLFile );  
+        biblio = fs.readFileSync( biblioHTMLFile, "utf8");
+    }
     
     // Make a directory for the illustrations and copy them to there
     const illustrationsDir = `${targetImageDir}/${annotationID}`;
@@ -401,10 +463,11 @@ function processAnnotation( annotationAsset, metadata ) {
     })
 
     // Take the pandoc output and transform it into final annotation html
-    processAnnotationHTML(annotationHTMLFile, annotationID, captions);
+    processAnnotationHTML(annotationHTMLFile, annotationID, captions, biblio);
 
     return {
         ...metadata,
+        abstract,
         contentURL: `${annotationRootURL}/${annotationID}.html`
     };    
 }
@@ -430,7 +493,7 @@ function processCaptions( captionHTMLFile ) {
     return captions;
 }
 
-function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
+function processAnnotationHTML( annotationHTMLFile, annotationID, captions, biblio ) {
 
     logger.info(`Processing annotation ${annotationID}`);
     // load document 
@@ -488,6 +551,14 @@ function processAnnotationHTML( annotationHTMLFile, annotationID, captions ) {
         oldEl.replaceWith(newEl);
     });
 
+    // Now append the bibliography
+    if( biblio ) {
+        let biblioEl = doc.createElement('div'); 
+        biblioEl.innerHTML = biblio;
+        let body = doc.getElementsByTagName('body')[0];
+        body.append(biblioEl);
+    }
+
     // TODO Tables
     // - change first row of the table to be a th instead of tr
 
@@ -542,12 +613,20 @@ function setupLogging() {
     });
 }
 
+function quickFix( driveAssets ) {
+    driveAssets.forEach( driveAsset => {
+        const annotationDir = `${baseDir}/${driveAsset.id}`;
+        const biblioDir = `${annotationDir}/bibliography`;
+        dirExists(biblioDir);
+    });
+}
+
 function main() {
 
     setupLogging();
 
     // TODO control mode with command line args
-    const mode = 'download';
+    const mode = 'process';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
@@ -559,6 +638,11 @@ function main() {
     logSeperator();    
 
     switch( mode ) {
+        case 'fix': {
+            const annotationDriveAssets = locateAnnotationAssets(true);
+            quickFix(annotationDriveAssets);
+            }
+            break;
         case 'download': {
             const annotationDriveAssets = locateAnnotationAssets(true);
             syncDriveAssets( annotationDriveAssets );
