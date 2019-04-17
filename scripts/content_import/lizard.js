@@ -10,6 +10,7 @@ const searchIndex = require('./search_index');
 const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const annotationMetaDataCSV = "scripts/content_import/TEMP/annometa.csv";
+const authorsCSV = "scripts/content_import/TEMP/authors.csv";
 const cachedAnnotationDriveScan = "scripts/content_import/TEMP/cachedScanFile.json";
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
@@ -37,28 +38,49 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function loadAnnotationMetadata() {
-    return new Promise( (resolve) => {
-        const csvData = fs.readFileSync(annotationMetaDataCSV).toString();
-        let annotationMetadata = {};
-        csv().fromString(csvData).then( (tableObj) => {
-            tableObj.forEach( entry => {
-                let metaData = {
-                    id: entry['Annotation ID'],
-                    driveID: entry['UUID'],
-                    name: entry['Title'],
-                    semester: entry['Semester'],
-                    year: entry['Year'],
-                    theme: entry['Theme'],
-                    entryIDs: entry['Entry ID'],
-                    authors: entry['Author'],
-                    status: 'draft'
-                }
-                annotationMetadata[metaData.driveID] = metaData;
-            });
-            resolve(annotationMetadata);
-        });    
-    })
+async function loadAnnotationMetadata() {
+    const csvData = fs.readFileSync(annotationMetaDataCSV).toString();
+    let annotationMetadata = {};
+    const tableObj = await csv().fromString(csvData)        
+    tableObj.forEach( entry => {
+        let metaData = {
+            id: entry['Annotation ID'],
+            driveID: entry['UUID'],
+            name: entry['Title'],
+            semester: entry['Semester'],
+            year: entry['Year'],
+            theme: entry['Theme'],
+            entryIDs: entry['Entry ID'],
+            authors: entry['Author'],
+            status: 'draft'
+        }
+        annotationMetadata[metaData.driveID] = metaData;
+    });    
+    return annotationMetadata
+}
+
+async function loadAuthors() {
+    const csvData = fs.readFileSync(authorsCSV).toString();
+    let authors = {};
+    const tableObj = await csv().fromString(csvData)        
+    tableObj.forEach( entry => {
+        let author = {
+            id: entry['Author-ID'],
+            annotations: entry['Annotation-ID'].split('|'),
+            fullName: entry['Full-name'],
+            firstName: entry['First-name'],
+            lastName: entry['Last-name'],
+            year: entry['Year'],
+            semester: entry['Semester'],
+            authorType: entry['Author-type'],
+            degree: entry['Degree'],
+            yearAtTime: entry['Year-at-time-of-class'],
+            department: entry['Department'],
+            subField: entry['Subfield-optional']
+        }
+        authors[author.id] = author;
+    });    
+    return authors
 }
 
 function findLocalAssets() {
@@ -374,24 +396,30 @@ function syncDriveFile( source, dest ) {
 }
 
 
-function processAnnotations(annotationAssets, annotationMetadata) {
+function processAnnotations(annotationAssets, annotationMetadata, authors) {
 
-    logger.info("Processing Annotations");
-    logSeperator();
+    logger.info("Processing Annotations")
+    logSeperator()
 
-    dirExists( targetAnnotationDir );
-    dirExists( targetImageDir );
-    dirExists( tempCaptionDir );
-    dirExists( tempAbstractDir );
+    dirExists( targetAnnotationDir )
+    dirExists( targetImageDir )
+    dirExists( tempCaptionDir )
+    dirExists( tempAbstractDir )
 
-    let annotationContent = [];
+    let annotationContent = []
     annotationAssets.forEach( asset => {
-        const metadata = annotationMetadata[asset.id];
+        const metadata = annotationMetadata[asset.id]
+        let annotationAuthors = []
+        Object.values(authors).forEach( author => {
+            if( author.annotations.includes(metadata.id) ) {
+                annotationAuthors.push( author.id )
+            }
+        })
         if( metadata ) {
-            let annotation = processAnnotation(asset,metadata);
-            annotationContent.push(annotation);    
+            let annotation = processAnnotation(asset,metadata,annotationAuthors)
+            annotationContent.push(annotation)
         } else {
-            logger.info(`Unable to process annotation, metadata not found: ${asset.id}`);
+            logger.info(`Unable to process annotation, metadata not found: ${asset.id}`)
         }
     })
 
@@ -401,16 +429,25 @@ function processAnnotations(annotationAssets, annotationMetadata) {
     }
 
     // write out annotation manifest
-    const annotationManifestFile = `${targetAnnotationDir}/annotations.json`;
+    const annotationManifestFile = `${targetAnnotationDir}/annotations.json`
     fs.writeFile(annotationManifestFile, JSON.stringify(annotationManifest, null, 3), (err) => {
         if (err) {
-          console.log(err);
-          logger.info(err);
+          console.log(err)
+          logger.info(err)
+        } 
+    });
+
+    // write out author list
+    const authorsFile = `${targetAnnotationDir}/authors.json`
+    fs.writeFile(authorsFile, JSON.stringify(authors, null, 3), (err) => {
+        if (err) {
+          console.log(err)
+          logger.info(err)
         } 
     });
 }
 
-function processAnnotation( annotationAsset, metadata ) {
+function processAnnotation( annotationAsset, metadata, authors ) {
 
     function convertToHTML( source, target ) {
         const escSource = source.replace(/"/g, '\\"')  
@@ -467,6 +504,7 @@ function processAnnotation( annotationAsset, metadata ) {
 
     return {
         ...metadata,
+        authors,
         abstract,
         contentURL: `${annotationRootURL}/${annotationID}.html`
     };    
@@ -621,8 +659,44 @@ function quickFix( driveAssets ) {
     });
 }
 
-function main() {
+async function run(mode) {
+    switch( mode ) {
+        case 'download': {
+            const annotationDriveAssets = locateAnnotationAssets(true);
+            syncDriveAssets( annotationDriveAssets );
+            }
+            break;
+        case 'process': {
+            const annotationAssets = findLocalAssets();
+            const annotationMetadata = await loadAnnotationMetadata()
+            const authors = await loadAuthors()
+            processAnnotations(annotationAssets,annotationMetadata,authors)
+            }
+            break;
+        case 'scan':
+            locateAnnotationAssets(false);
+            break;
+        case 'index':
+            searchIndex.generateAnnotationIndex(targetAnnotationDir, targetSearchIndexDir);
+            break;
+        case 'fix': {
+            const annotationDriveAssets = locateAnnotationAssets(true);
+            quickFix(annotationDriveAssets);
+            }
+            break;
+        case 'all': {
+            const annotationDriveAssets = locateAnnotationAssets();
+            const annotationAssets = syncDriveAssets( annotationDriveAssets );
+            const annotationMetadata = await loadAnnotationMetadata()
+            const authors = await loadAuthors()
+            processAnnotations(annotationAssets,annotationMetadata,authors)
+            }
+            break;
+    }    
+}
 
+
+function main() {
     setupLogging();
 
     // TODO control mode with command line args
@@ -637,39 +711,13 @@ function main() {
     logger.info(`Lizard running in ${mode} mode at ${date.toLocaleTimeString()} on ${date.toDateString()}.`);
     logSeperator();    
 
-    switch( mode ) {
-        case 'fix': {
-            const annotationDriveAssets = locateAnnotationAssets(true);
-            quickFix(annotationDriveAssets);
-            }
-            break;
-        case 'download': {
-            const annotationDriveAssets = locateAnnotationAssets(true);
-            syncDriveAssets( annotationDriveAssets );
-            }
-            break;
-        case 'process': {
-            const annotationAssets = findLocalAssets();
-            loadAnnotationMetadata().then( (annotationMetadata) => {
-                processAnnotations(annotationAssets,annotationMetadata);
-            });
-            }
-            break;
-        case 'scan':
-            locateAnnotationAssets(false);
-            break;
-        case 'index':
-            searchIndex.generateAnnotationIndex(targetAnnotationDir, targetSearchIndexDir);
-            break;
-        case 'all': {
-            const annotationDriveAssets = locateAnnotationAssets();
-            const annotationAssets = syncDriveAssets( annotationDriveAssets );
-            const annotationMetadata = loadAnnotationMetadata();
-            processAnnotations(annotationAssets,annotationMetadata);
-            }
-            break;
-    }    
+    run(mode).then(() => {
+        logger.info(`Lizard finised at ${date.toLocaleTimeString()}.`)
+    }, (err) => {
+        logger.info(`Lizard stopped at ${date.toLocaleTimeString()}.`)
+        logger.error(`${err}: ${err.stack}`)  
+    });
 }
 
 ///// RUN THE SCRIPT
-main();
+main()
