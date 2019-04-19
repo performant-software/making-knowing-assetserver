@@ -12,7 +12,8 @@ const transcriptionTypes = [
 
 function downloadFiles(inputDir) {
 
-  if( !fs.existsSync(inputDir) ) {
+  // if folder is empty, clone repository. otherwise pull from repo
+  if( fs.readdirSync(inputDir).length === 0 ) {
     execSync(`git clone https://github.com/performant-software/m-k-manuscript-data.git ${inputDir}`, (error, stdout, stderr) => {
       console.log(`${stdout}`);
       console.log(`${stderr}`);
@@ -125,14 +126,12 @@ function nextInterval() {
 
 async function main() {
 
-  // CONDITION: when server is started, inputDir must not exist
+  // make sure the necessary dirs exist
   const inputDir = 'scripts/content_import/TEMP/input';
-
-  // make sure the necessary dirs exist, EXCEPT above
   const correctFormatDir = 'scripts/content_import/TEMP/sorted-input';
   const folioPath = 'nginx/webroot/folio';
   const searchIndexPath = 'nginx/webroot/search-idx';
-  if( !dirExists(folioPath) || !dirExists(searchIndexPath) || !dirExists(correctFormatDir) ) {
+  if( !dirExists(folioPath) || !dirExists(searchIndexPath) || !dirExists(correctFormatDir) || !dirExists(inputDir) ) {
     console.log('Unable to start asset server.');
     return;
   }
