@@ -11,7 +11,6 @@ const transcriptionTypes = [
 ];
 
 function downloadFiles(inputDir) {
-  console.log('downloading');
 
   if( !fs.existsSync(inputDir) ) {
     execSync(`git clone https://github.com/performant-software/m-k-manuscript-data.git ${inputDir}`, (error, stdout, stderr) => {
@@ -33,7 +32,30 @@ function downloadFiles(inputDir) {
 }
 
 function reorganizeFiles(pullDir, orderedDir) {
-  //TODO
+  const inputDir = `${pullDir}/ms-xml`;
+
+  const listDir = fs.readdirSync(`${pullDir}/ms-xml/tc`);
+
+  listDir.forEach( page => {
+    // extract folio ID
+    const matches = page.match(/p[0-9]{3}[vr]/);
+    // make sure there are no other files that aren't pages
+    const folioID = matches ? matches[0] : null;
+
+    if(folioID) {
+      const targetDir = `${orderedDir}/${folioID}`;
+
+      if( dirExists(targetDir) ) {
+        transcriptionTypes.forEach( transcriptionType => {
+          const sourceFile = `${inputDir}/${transcriptionType}/${transcriptionType}_${folioID}_preTEI.xml`;
+          if(fs.existsSync(sourceFile)) {
+            const targetFile = `${targetDir}/${transcriptionType}_${folioID}.txt`;
+            fs.copyFileSync(sourceFile, targetFile);
+          }
+        });
+      }
+    }
+  });
 }
 
 function clearLogFile() {
@@ -91,7 +113,6 @@ function dirExists( dir ) {
 }
 
 function sleep(ms) {
-    console.log('sleeping');
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -99,19 +120,19 @@ function nextInterval() {
     const now = new Date();
     const nextIntervalMins = waitTimeLengthMins - (now.getMinutes() % waitTimeLengthMins);
     const nextIntervalMs = (nextIntervalMins * 60) * 1000;
-    console.log(nextIntervalMs);
     return nextIntervalMs;
 }
 
 async function main() {
 
-  // make sure the necessary dirs exist, EXCEPT:
   // CONDITION: when server is started, inputDir must not exist
   const inputDir = 'scripts/content_import/TEMP/input';
 
+  // make sure the necessary dirs exist, EXCEPT above
+  const correctFormatDir = 'scripts/content_import/TEMP/sorted-input';
   const folioPath = 'nginx/webroot/folio';
   const searchIndexPath = 'nginx/webroot/search-idx';
-  if( !dirExists(folioPath) || !dirExists(searchIndexPath) ) {
+  if( !dirExists(folioPath) || !dirExists(searchIndexPath) || !dirExists(correctFormatDir) ) {
     console.log('Unable to start asset server.');
     return;
   }
@@ -125,12 +146,11 @@ async function main() {
   console.log('Download files from Github...');
   downloadFiles(inputDir);
 
-  //sleep(nextInterval());
-
-  /*
+  console.log('Reorganize files...');
+  reorganizeFiles(inputDir, correctFormatDir);
 
   console.log('Copy all the folios to the web directory...');
-  copyFolioXMLs( inputDir, folioPath )
+  copyFolioXMLs( correctFormatDir, folioPath );
 
   console.log('Convert folios to HTML...');
   convert.convertFolios(folioPath);
@@ -138,7 +158,8 @@ async function main() {
   console.log('Generate Search Index...');
   searchIndex.generate(folioPath, searchIndexPath);
 
-  */
+  console.log('sleeping');
+  sleep(nextInterval());
 
 }
 
