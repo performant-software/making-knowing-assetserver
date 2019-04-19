@@ -5,21 +5,35 @@ const searchIndex = require('./search_index');
 const convert = require('./convert');
 
 const waitTimeLengthMins = 1;
-// const googleShareName="\"__Manuscript\ Pages\"";
-const googleShareName="\"BnF\ Ms\ Fr\ 640/__Manuscript\ Pages\"";
 
 const transcriptionTypes = [
   'tc', 'tcn', 'tl'
 ];
 
 function downloadFiles(inputDir) {
-  execSync(`rclone --drive-formats txt -v --drive-shared-with-me sync google:${googleShareName} ${inputDir}`, (error, stdout, stderr) => {
-    console.log(`${stdout}`);
-    console.log(`${stderr}`);
-    if (error !== null) {
-        console.log(`exec error: ${error}`);
-    }
-  });  
+  console.log('downloading');
+
+  if( !fs.existsSync(inputDir) ) {
+    execSync(`git clone https://github.com/performant-software/m-k-manuscript-data.git ${inputDir}`, (error, stdout, stderr) => {
+      console.log(`${stdout}`);
+      console.log(`${stderr}`);
+      if (error !== null) {
+          console.log(`exec error: ${error}`);
+      }
+    });
+  } else {
+    execSync(`git -C ${inputDir} pull`, (error, stdout, stderr) => {
+      console.log(`${stdout}`);
+      console.log(`${stderr}`);
+      if (error !== null) {
+          console.log(`exec error: ${error}`);
+      }
+    });
+  }
+}
+
+function reorganizeFiles(pullDir, orderedDir) {
+  //TODO
 }
 
 function clearLogFile() {
@@ -31,7 +45,7 @@ function clearLogFile() {
     if (error !== null) {
         console.log(`exec error: ${error}`);
     }
-  });  
+  });
 }
 
 function copyFolioXMLs( sourcePath, folioPath ) {
@@ -46,7 +60,7 @@ function copyFolioXMLs( sourcePath, folioPath ) {
 
     if( folioID ) {
       const targetDir = `${folioPath}/${folioID}`;
-  
+
       // create a dir for folio if necessary
       if( dirExists(targetDir) ) {
         transcriptionTypes.forEach( transcriptionType => {
@@ -55,12 +69,12 @@ function copyFolioXMLs( sourcePath, folioPath ) {
           // always create the dir even if source file not found.
           if( dirExists(ttDir) ) {
             if( fs.existsSync(sourceFile) ) {
-              const targetFile = `${ttDir}/original.txt`;            
+              const targetFile = `${ttDir}/original.txt`;
               fs.copyFileSync(sourceFile, targetFile);
             }
           }
         });
-      }  
+      }
     }
   });
 }
@@ -72,11 +86,12 @@ function dirExists( dir ) {
       console.log(`${dir} not found and unable to create it.`);
       return false;
     }
-  }  
+  }
   return true;
 }
 
 function sleep(ms) {
+    console.log('sleeping');
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
@@ -84,28 +99,35 @@ function nextInterval() {
     const now = new Date();
     const nextIntervalMins = waitTimeLengthMins - (now.getMinutes() % waitTimeLengthMins);
     const nextIntervalMs = (nextIntervalMins * 60) * 1000;
+    console.log(nextIntervalMs);
     return nextIntervalMs;
 }
 
 async function main() {
 
-  // make sure the necessary dirs exist
+  // make sure the necessary dirs exist, EXCEPT:
+  // CONDITION: when server is started, inputDir must not exist
   const inputDir = 'scripts/content_import/TEMP/input';
+
   const folioPath = 'nginx/webroot/folio';
   const searchIndexPath = 'nginx/webroot/search-idx';
-  if( !fs.existsSync(inputDir) || !dirExists(folioPath) || !dirExists(searchIndexPath) ) {
+  if( !dirExists(folioPath) || !dirExists(searchIndexPath) ) {
     console.log('Unable to start asset server.');
     return;
   }
 
   // Start fresh each run
-  clearLogFile();
+  //clearLogFile();
 
   const now = new Date();
   console.log( `Asset Pipeline started at: ${now.toString()}`);
 
-  console.log('Download files from Google Drive...');
+  console.log('Download files from Github...');
   downloadFiles(inputDir);
+
+  //sleep(nextInterval());
+
+  /*
 
   console.log('Copy all the folios to the web directory...');
   copyFolioXMLs( inputDir, folioPath )
@@ -115,6 +137,8 @@ async function main() {
 
   console.log('Generate Search Index...');
   searchIndex.generate(folioPath, searchIndexPath);
+
+  */
 
 }
 
