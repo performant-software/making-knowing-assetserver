@@ -14,7 +14,7 @@ function downloadFiles(inputDir) {
 
   // if folder is empty, clone repository. otherwise pull from repo
   if( fs.readdirSync(inputDir).length === 0 ) {
-    execSync(`git clone https://github.com/performant-software/m-k-manuscript-data.git ${inputDir}`, (error, stdout, stderr) => {
+    execSync(`git clone https://github.com/cu-mkp/m-k-manuscript-data.git ${inputDir}`, (error, stdout, stderr) => {
       console.log(`${stdout}`);
       console.log(`${stderr}`);
       if (error !== null) {
