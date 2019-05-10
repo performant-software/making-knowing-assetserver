@@ -59,8 +59,7 @@ const convertToSpan =[
 const filterOut = [
   'id',
   'margin',
-  'render',
-  'comment'
+  'render'
 ];
 
 function validLayoutCode( layoutCode ) {

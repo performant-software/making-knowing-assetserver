@@ -1,5 +1,6 @@
 const fs = require('fs');
 
+// normal dev config
 const devConfiguration = {
   iiifDomain: "http://localhost:4000",
   transcriptionDomain: "http://localhost:4000",
@@ -8,6 +9,15 @@ const devConfiguration = {
   manifestFilename: 'manifest-dev.json',
   annotationListPath: "/bnf-ms-fr-640/list-dev"
 };
+
+// const devConfiguration = {
+//   iiifDomain: "http://localhost:4000",
+//   transcriptionDomain: "http://142.93.204.224",
+//   folioPath: "/folio",
+//   listPath: "/list-dev",
+//   manifestFilename: 'manifest-dev.json',
+//   annotationListPath: "/bnf-ms-fr-640/list-dev"
+// };
 
 const prodConfiguration = {
   iiifDomain: "http://edition.makingandknowing.org",
@@ -20,11 +30,11 @@ const prodConfiguration = {
 
 const stagingConfiguration = {
   iiifDomain: "http://edition-staging.makingandknowing.org",
-  transcriptionDomain: "http://209.97.145.244",
+  transcriptionDomain: "http://142.93.204.224",
   folioPath: "/folio",
-  listPath: "/list",
+  listPath: "/list-staging",
   manifestFilename: 'manifest-staging.json',
-  annotationListPath: "/bnf-ms-fr-640/list"
+  annotationListPath: "/bnf-ms-fr-640/list-staging"
 };
 
 // const prodConfiguration2 = {
