@@ -11,8 +11,10 @@ const googleShareName="BnF Ms Fr 640/Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const annotationMetaDataCSV = "scripts/content_import/TEMP/annometa.csv";
 const authorsCSV = "scripts/content_import/TEMP/authors.csv";
+const commentsCSV = "scripts/content_import/TEMP/comments.csv";
 const cachedAnnotationDriveScan = "scripts/content_import/TEMP/cachedScanFile.json";
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
+const targetCommentsFile = '../making-knowing/public/bnf-ms-fr-640/comments.json';
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const targetSearchIndexDir = '../making-knowing/public/bnf-ms-fr-640/search-idx';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
@@ -57,6 +59,26 @@ async function loadAnnotationMetadata() {
         annotationMetadata[metaData.driveID] = metaData;
     });    
     return annotationMetadata
+}
+
+async function loadComments() {
+    const csvData = fs.readFileSync(commentsCSV).toString();
+    let comments = {};
+    const tableObj = await csv().fromString(csvData)        
+    tableObj.forEach( entry => {
+        let comment = {
+            id: entry['Comment-ID'],
+            folio: entry['Folio'],
+            tc: (entry['TC'] === 'X'),
+            tcn: (entry['TCN'] === 'X'),
+            tl: (entry['TL'] === 'X'),
+            includeDCE: (entry['Include-DCE'] === 'X'),
+            comment: entry['Comment']
+        }
+
+        comments[comment.id] = comment;
+    });    
+    return comments
 }
 
 async function loadAuthors() {
@@ -396,7 +418,7 @@ function syncDriveFile( source, dest ) {
 }
 
 
-function processAnnotations(annotationAssets, annotationMetadata, authors) {
+function processAnnotations(annotationAssets, annotationMetadata, authors, comments) {
 
     logger.info("Processing Annotations")
     logSeperator()
@@ -445,6 +467,15 @@ function processAnnotations(annotationAssets, annotationMetadata, authors) {
           logger.info(err)
         } 
     });
+
+    // write out editorial comments
+    fs.writeFile(targetCommentsFile, JSON.stringify(comments, null, 3), (err) => {
+        if (err) {
+        console.log(err)
+        logger.info(err)
+        } 
+    });
+    
 }
 
 function processAnnotation( annotationAsset, metadata, authors ) {
@@ -670,7 +701,8 @@ async function run(mode) {
             const annotationAssets = findLocalAssets();
             const annotationMetadata = await loadAnnotationMetadata()
             const authors = await loadAuthors()
-            processAnnotations(annotationAssets,annotationMetadata,authors)
+            const comments = await loadComments()
+            processAnnotations(annotationAssets,annotationMetadata,authors,comments)
             }
             break;
         case 'scan':
@@ -689,7 +721,8 @@ async function run(mode) {
             const annotationAssets = syncDriveAssets( annotationDriveAssets );
             const annotationMetadata = await loadAnnotationMetadata()
             const authors = await loadAuthors()
-            processAnnotations(annotationAssets,annotationMetadata,authors)
+            const comments = await loadComments()
+            processAnnotations(annotationAssets,annotationMetadata,authors,comments)
             }
             break;
     }    
