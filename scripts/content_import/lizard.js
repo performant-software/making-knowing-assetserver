@@ -8,6 +8,7 @@ const winston = require('winston');
 const searchIndex = require('./search_index');
 
 const rCloneServiceName = 'gdrive-bnf'
+const rCloneSharedDrive = false
 // const googleShareName="BnF Ms Fr 640/Annotations";
 const googleShareName="Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
@@ -233,7 +234,8 @@ function locateAnnotationAssets(useCache) {
     if( useCache )  {
         annotationDriveJSON = fs.readFileSync(cachedAnnotationDriveScan, "utf8");
     } else {
-        const buffer = execSync(`rclone lsjson --drive-shared-with-me -R ${rCloneServiceName}:"${googleShareName}"`, (error, stdout, stderr) => {
+        const shared = rCloneSharedDrive ? "--drive-shared-with-me" : ""
+        const buffer = execSync(`rclone lsjson ${shared} -R ${rCloneServiceName}:"${googleShareName}"`, (error, stdout, stderr) => {
             if (error !== null) {
                 throw `ERROR: Unable to list Google Drive: ${googleShareName}`;
             } 
@@ -408,7 +410,8 @@ function dirExists( dir ) {
 function syncDriveFile( source, dest ) {
     // escape all quotes in source path
     const escSource = source.replace(/"/g, '\\"')  
-    const cmd = `rclone --drive-shared-with-me sync ${rCloneServiceName}:"${escSource}" "${dest}"`;
+    const shared = rCloneSharedDrive ? "--drive-shared-with-me" : ""
+    const cmd = `rclone ${shared} sync ${rCloneServiceName}:"${escSource}" "${dest}"`;
     logger.info(cmd);
     execSync(cmd, (error, stdout, stderr) => {
         console.log(`${stdout}`);
