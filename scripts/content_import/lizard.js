@@ -8,7 +8,8 @@ const winston = require('winston');
 const searchIndex = require('./search_index');
 
 const rCloneServiceName = 'gdrive-bnf'
-const googleShareName="BnF Ms Fr 640/Annotations";
+// const googleShareName="BnF Ms Fr 640/Annotations";
+const googleShareName="Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const annotationMetaDataCSV = "scripts/content_import/TEMP/annometa.csv";
 const authorsCSV = "scripts/content_import/TEMP/authors.csv";
