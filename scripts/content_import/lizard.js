@@ -698,7 +698,7 @@ function quickFix( driveAssets ) {
 async function run(mode) {
     switch( mode ) {
         case 'download': {
-            const annotationDriveAssets = locateAnnotationAssets(true);
+            const annotationDriveAssets = locateAnnotationAssets(false);
             syncDriveAssets( annotationDriveAssets );
             }
             break;
