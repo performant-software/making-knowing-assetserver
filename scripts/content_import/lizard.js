@@ -738,7 +738,7 @@ function main() {
     setupLogging();
 
     // TODO control mode with command line args
-    const mode = 'scan';
+    const mode = 'download';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
