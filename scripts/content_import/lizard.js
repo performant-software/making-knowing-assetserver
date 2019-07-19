@@ -6,18 +6,20 @@ const csv = require('csvtojson');
 const winston = require('winston');
 
 const searchIndex = require('./search_index');
+const glossary = require('./glossary');
 
 const rCloneServiceName = 'gdrive-bnf'
 const rCloneSharedDrive = false
-// const googleShareName="BnF Ms Fr 640/Annotations";
 const googleShareName="Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const annotationMetaDataCSV = "scripts/content_import/TEMP/annometa.csv";
 const authorsCSV = "scripts/content_import/TEMP/authors.csv";
 const commentsCSV = "scripts/content_import/TEMP/comments.csv";
+const glossaryCSV = "scripts/content_import/TEMP/input/glossary/DCE-glossary-table.csv";
 const cachedAnnotationDriveScan = "scripts/content_import/TEMP/cachedScanFile.json";
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
 const targetCommentsFile = '../making-knowing/public/bnf-ms-fr-640/comments.json';
+const targetGlossaryFile = "../making-knowing/public/bnf-ms-fr-640/glossary.json"
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const targetSearchIndexDir = '../making-knowing/public/bnf-ms-fr-640/search-idx';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
@@ -710,6 +712,9 @@ async function run(mode) {
             processAnnotations(annotationAssets,annotationMetadata,authors,comments)
             }
             break;
+        case 'glossary': 
+            await glossary.generate(glossaryCSV, targetGlossaryFile);
+            break;
         case 'scan':
             locateAnnotationAssets(false);
             break;
@@ -738,7 +743,7 @@ function main() {
     setupLogging();
 
     // TODO control mode with command line args
-    const mode = 'download';
+    const mode = 'glossary';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
