@@ -12,9 +12,9 @@ const rCloneServiceName = 'gdrive-bnf'
 const rCloneSharedDrive = false
 const googleShareName="Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
-const annotationMetaDataCSV = "scripts/content_import/TEMP/annometa.csv";
+const annotationMetaDataCSV = "scripts/content_import/TEMP/input/metadata/annotation-metadata.csv";
 const authorsCSV = "scripts/content_import/TEMP/authors.csv";
-const commentsCSV = "scripts/content_import/TEMP/comments.csv";
+const commentsCSV = "scripts/content_import/TEMP/input/metadata/DCE_comment-tracking-Tracking.csv";
 const glossaryCSV = "scripts/content_import/TEMP/input/glossary/DCE-glossary-table.csv";
 const cachedAnnotationDriveScan = "scripts/content_import/TEMP/cachedScanFile.json";
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
@@ -257,32 +257,29 @@ function locateAnnotationAssets(useCache) {
             let biblioFile = null;
             let illustrations = [];
             if( annotationRoot.children ) {
-                annotationRoot.children.forEach( assetFolder => {
-                    if( assetFolder.children ) {
-                        // locate the text file and captions file in docx format, there should be exactly one in folder
-                        if( assetFolder.children.length === 1 ) {
-                            let fileNode = assetFolder.children[0];
-                            if( fileNode.mimeType === docxMimeType ) {
-                                if( assetFolder.name.includes('Text_') ) {
-                                    textFileNode = fileNode;
-                                } else if( assetFolder.name.includes('Captions_') ) {
-                                    captionFile = fileNode;
-                                } else if( assetFolder.name.includes('Abstract_') ) {
-                                    abstractFile = fileNode;
-                                } else if( assetFolder.name.includes('Bibliography_') ) {
-                                    biblioFile = fileNode;
-                                }       
-                            }
-                        }
+                annotationRoot.children.forEach( assetFile => {
 
+                    if( assetFile.mimeType === docxMimeType ) {
+                        if( assetFile.name.includes('Text_') ) {
+                            textFileNode = assetFile;
+                        } else if( assetFile.name.includes('Captions_') ) {
+                            captionFile = assetFile;
+                        } else if( assetFile.name.includes('Abstract_') ) {
+                            abstractFile = assetFile;
+                        } else if( assetFile.name.includes('Bibliography_') ) {
+                            biblioFile = assetFile;
+                        }       
+                    }
+
+                    if( assetFile.children ) {
                         // locate the illustrations, if any
-                        if( assetFolder.name.includes('Illustrations_') ) {
-                            assetFolder.children.forEach( illustrationFile => {
+                        if( assetFile.children.length > 0 && assetFile.name.includes('Illustrations_') ) {
+                            assetFile.children.forEach( illustrationFile => {
                                 if( illustrationFile.mimeType === jpegMimeType ) {
                                     illustrations.push( illustrationFile );
                                 }
                             });
-                        }
+                        }                        
                     } 
                 });  
             } else {
@@ -743,7 +740,7 @@ function main() {
     setupLogging();
 
     // TODO control mode with command line args
-    const mode = 'glossary';
+    const mode = 'download';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
