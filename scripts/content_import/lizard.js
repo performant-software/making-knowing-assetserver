@@ -300,7 +300,7 @@ function locateAnnotationAssets(useCache) {
                 logger.info(`Found annotation: ${textFileNode.id} in ${googleShareName}${path}`);
             } else {
                 const path = nodeToPath(annotationRoot);
-                logger.info(`Annotation not found. Must contain Text_* subfolder with exactly one docx file: ${path}`);
+                logger.info(`Annotation not found. Must contain docx file with Text_* in the filename: ${path}`);
             }
         });
     });
@@ -740,7 +740,7 @@ function main() {
     setupLogging();
 
     // TODO control mode with command line args
-    const mode = 'download';
+    const mode = 'process';
 
     if( mode === 'help' ) {
         console.log("A helpful lizard.")
