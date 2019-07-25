@@ -6,7 +6,6 @@ const csv = require('csvtojson');
 const winston = require('winston');
 
 const searchIndex = require('./search_index');
-const glossary = require('./glossary');
 
 const rCloneServiceName = 'gdrive-bnf'
 const rCloneSharedDrive = false
@@ -14,12 +13,8 @@ const googleShareName="Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
 const annotationMetaDataCSV = "scripts/content_import/TEMP/input/metadata/annotation-metadata.csv";
 const authorsCSV = "scripts/content_import/TEMP/authors.csv";
-const commentsCSV = "scripts/content_import/TEMP/input/metadata/DCE_comment-tracking-Tracking.csv";
-const glossaryCSV = "scripts/content_import/TEMP/input/glossary/DCE-glossary-table.csv";
 const cachedAnnotationDriveScan = "scripts/content_import/TEMP/cachedScanFile.json";
 const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
-const targetCommentsFile = '../making-knowing/public/bnf-ms-fr-640/comments.json';
-const targetGlossaryFile = "../making-knowing/public/bnf-ms-fr-640/glossary.json"
 const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
 const targetSearchIndexDir = '../making-knowing/public/bnf-ms-fr-640/search-idx';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
@@ -41,9 +36,6 @@ const figureCitation = /[F|f]ig(\.|ure[\.]*)[\s]*[0-9]+/;
 const figureNumber = /[0-9]+/;
 const invalidFigureNumber = "XX";
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 async function loadAnnotationMetadata() {
     const csvData = fs.readFileSync(annotationMetaDataCSV).toString();
@@ -64,26 +56,6 @@ async function loadAnnotationMetadata() {
         annotationMetadata[metaData.driveID] = metaData;
     });    
     return annotationMetadata
-}
-
-async function loadComments() {
-    const csvData = fs.readFileSync(commentsCSV).toString();
-    let comments = {};
-    const tableObj = await csv().fromString(csvData)        
-    tableObj.forEach( entry => {
-        let comment = {
-            id: entry['Comment-ID'],
-            folio: entry['Folio'],
-            tc: (entry['TC'] === 'X'),
-            tcn: (entry['TCN'] === 'X'),
-            tl: (entry['TL'] === 'X'),
-            includeDCE: (entry['Include-DCE'] === 'X'),
-            comment: entry['Comment']
-        }
-
-        comments[comment.id] = comment;
-    });    
-    return comments
 }
 
 async function loadAuthors() {
@@ -422,7 +394,7 @@ function syncDriveFile( source, dest ) {
 }
 
 
-function processAnnotations(annotationAssets, annotationMetadata, authors, comments) {
+function processAnnotations(annotationAssets, annotationMetadata, authors ) {
 
     logger.info("Processing Annotations")
     logSeperator()
@@ -471,15 +443,6 @@ function processAnnotations(annotationAssets, annotationMetadata, authors, comme
           logger.info(err)
         } 
     });
-
-    // write out editorial comments
-    fs.writeFile(targetCommentsFile, JSON.stringify(comments, null, 3), (err) => {
-        if (err) {
-        console.log(err)
-        logger.info(err)
-        } 
-    });
-    
 }
 
 function processAnnotation( annotationAsset, metadata, authors ) {
@@ -705,12 +668,8 @@ async function run(mode) {
             const annotationAssets = findLocalAssets();
             const annotationMetadata = await loadAnnotationMetadata()
             const authors = await loadAuthors()
-            const comments = await loadComments()
-            processAnnotations(annotationAssets,annotationMetadata,authors,comments)
+            processAnnotations(annotationAssets,annotationMetadata,authors)
             }
-            break;
-        case 'glossary': 
-            await glossary.generate(glossaryCSV, targetGlossaryFile);
             break;
         case 'scan':
             locateAnnotationAssets(false);
@@ -728,8 +687,7 @@ async function run(mode) {
             const annotationAssets = syncDriveAssets( annotationDriveAssets );
             const annotationMetadata = await loadAnnotationMetadata()
             const authors = await loadAuthors()
-            const comments = await loadComments()
-            processAnnotations(annotationAssets,annotationMetadata,authors,comments)
+            processAnnotations(annotationAssets,annotationMetadata,authors)
             }
             break;
     }    
