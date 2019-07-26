@@ -407,13 +407,13 @@ function processAnnotations(annotationAssets, annotationMetadata, authors ) {
     let annotationContent = []
     annotationAssets.forEach( asset => {
         const metadata = annotationMetadata[asset.id]
-        let annotationAuthors = []
-        Object.values(authors).forEach( author => {
-            if( author.annotations.includes(metadata.id) ) {
-                annotationAuthors.push( author.id )
-            }
-        })
         if( metadata ) {
+            let annotationAuthors = []
+            Object.values(authors).forEach( author => {
+                if( author.annotations.includes(metadata.id) ) {
+                    annotationAuthors.push( author.id )
+                }
+            })
             let annotation = processAnnotation(asset,metadata,annotationAuthors)
             annotationContent.push(annotation)
         } else {
