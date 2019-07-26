@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const fs = require('fs');
 const { execSync } = require('child_process');
 const jsdom = require("jsdom");
@@ -677,17 +679,18 @@ async function run(mode) {
         case 'index':
             searchIndex.generateAnnotationIndex(targetAnnotationDir, targetSearchIndexDir);
             break;
-        case 'fix': {
-            const annotationDriveAssets = locateAnnotationAssets(true);
-            quickFix(annotationDriveAssets);
-            }
-            break;
-        case 'all': {
+        // case 'fix': {
+        //     const annotationDriveAssets = locateAnnotationAssets(true);
+        //     quickFix(annotationDriveAssets);
+        //     }
+        //     break;
+        case 'run': {
             const annotationDriveAssets = locateAnnotationAssets();
             const annotationAssets = syncDriveAssets( annotationDriveAssets );
             const annotationMetadata = await loadAnnotationMetadata()
             const authors = await loadAuthors()
             processAnnotations(annotationAssets,annotationMetadata,authors)
+            searchIndex.generateAnnotationIndex(targetAnnotationDir, targetSearchIndexDir);
             }
             break;
     }    
@@ -697,12 +700,22 @@ async function run(mode) {
 function main() {
     setupLogging();
 
-    // TODO control mode with command line args
-    const mode = 'process';
-
+    let mode;
+    if (process.argv.length <= 2) {
+        mode = 'help'
+    } else {
+        mode = process.argv[2];
+    }
+     
     if( mode === 'help' ) {
-        console.log("A helpful lizard.")
-        return;
+        console.log(`Usage: lizard.js <command>` );
+        console.log("A helpful lizard that responds to the following commands:")
+        console.log("\tdownload: Download the annotations from Google Drive via rclone.");
+        console.log("\tprocess: Process the downloaded files and place them on the asset server.");
+        console.log("\tindex: Create a search index of the annotations.");
+        console.log("\trun: Do all of the above.")
+        console.log("\thelp: Displays this help. ");
+        process.exit(-1);
     }
 
     let date = new Date();
