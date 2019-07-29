@@ -157,8 +157,8 @@ function convertPhraseLevelMarkup( htmlDoc, el, elementName ) {
 
 function convertAB( htmlDoc, ab ) {
   let abDiv = convertPhraseLevelMarkup( htmlDoc, ab, 'div' );
-  abDiv.dataset.layout = validLayoutCode( findDataElement( ab, 'margin' ) );
-  const layoutHint = validLayoutHint( findDataElement( ab, 'render') );
+  abDiv.dataset.layout = validLayoutCode( ab.getAttribute('margin') );
+  const layoutHint = validLayoutHint( ab.getAttribute('render') );
   if( layoutHint ) {
     abDiv.dataset.layoutHint = layoutHint;
   }
@@ -171,11 +171,11 @@ function convertHead( htmlDoc, head ) {
 }
 
 function convertFigure( htmlDoc, figure ) {
-  let figureID = findDataElement( figure, 'id' );
+  let figureID = figure.getAttribute('id');
   let figureURL = ( figureID ) ? `${figuresDir}/${figureID.substr(4)}.png` : null;
   let figDiv = htmlDoc.createElement('div');
-  figDiv.id = findDataElement( figure, 'id' );
-  figDiv.dataset.layout = validLayoutCode( findDataElement( figure, 'margin' ) );
+  figDiv.id = figureID;
+  figDiv.dataset.layout = validLayoutCode( figure.getAttribute('margin') );
   figDiv.innerHTML = ( figureURL ) ?  `<img alt='' className='inline-figure' src='${figureURL}'/>` : "";
   return figDiv;
 }
@@ -208,7 +208,7 @@ function convertXML(xml, fileID) {
 
   for( let div of divs ) {
     let zoneDiv = htmlDoc.createElement('div');
-    zoneDiv.id = findDataElement( div, 'id' );
+    zoneDiv.id = div.getAttribute('id')
 
     for( let child of div.children ) {
       if( child.nodeName === 'ab') {

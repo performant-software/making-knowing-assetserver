@@ -40,9 +40,9 @@ function downloadFiles(inputDir) {
 }
 
 function reorganizeFiles(pullDir, orderedDir) {
-  const inputDir = `${pullDir}/ms-xml`;
+  const inputDir = `${pullDir}/post_processed`;
 
-  const listDir = fs.readdirSync(`${pullDir}/ms-xml/tc`);
+  const listDir = fs.readdirSync(`${pullDir}/post_processed/tc`);
 
   listDir.forEach( page => {
     // extract folio ID
@@ -55,7 +55,7 @@ function reorganizeFiles(pullDir, orderedDir) {
 
       if( dirExists(targetDir) ) {
         transcriptionTypes.forEach( transcriptionType => {
-          const sourceFile = `${inputDir}/${transcriptionType}/${transcriptionType}_${folioID}_preTEI.xml`;
+          const sourceFile = `${inputDir}/${transcriptionType}/${transcriptionType}_${folioID}_preTEI_attrs.xml`;
           if(fs.existsSync(sourceFile)) {
             const targetFile = `${targetDir}/${transcriptionType}_${folioID}.txt`;
             fs.copyFileSync(sourceFile, targetFile);
