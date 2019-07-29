@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const fs = require('fs');
 const { execSync } = require('child_process');
 const jsdom = require("jsdom");
@@ -7,16 +9,16 @@ const winston = require('winston');
 
 const searchIndex = require('./search_index');
 
-const googleShareName="BnF Ms Fr 640/Annotations";
+const rCloneServiceName = 'gdrive-bnf'
+const rCloneSharedDrive = false
+const googleShareName="Annotations";
 const baseDir = 'scripts/content_import/TEMP/annotations';
-const annotationMetaDataCSV = "scripts/content_import/TEMP/annometa.csv";
-const authorsCSV = "scripts/content_import/TEMP/authors.csv";
-const commentsCSV = "scripts/content_import/TEMP/comments.csv";
+const annotationMetaDataCSV = "scripts/content_import/TEMP/input/metadata/annotation-metadata.csv";
+const authorsCSV = "scripts/content_import/TEMP/input/metadata/authors.csv";
 const cachedAnnotationDriveScan = "scripts/content_import/TEMP/cachedScanFile.json";
-const targetAnnotationDir = '../making-knowing/public/bnf-ms-fr-640/annotations';
-const targetCommentsFile = '../making-knowing/public/bnf-ms-fr-640/comments.json';
-const targetImageDir = '../making-knowing/public/bnf-ms-fr-640/images';
-const targetSearchIndexDir = '../making-knowing/public/bnf-ms-fr-640/search-idx';
+const targetAnnotationDir = 'nginx/webroot/annotations';
+const targetImageDir = 'nginx/webroot/images';
+const targetSearchIndexDir = 'nginx/webroot/search-idx';
 const tempCaptionDir = 'scripts/content_import/TEMP/captions';
 const tempAbstractDir = 'scripts/content_import/TEMP/abstract';
 const tempBiblioDir = 'scripts/content_import/TEMP/abstract';
@@ -24,8 +26,8 @@ const convertAnnotationLog = 'scripts/content_import/TEMP/lizard.log';
 let logger = null;
 // const annotationRootURL = "http://localhost:4000/bnf-ms-fr-640/annotations";
 // const imageRootURL = "http://localhost:4000/bnf-ms-fr-640/images";
-const annotationRootURL = "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/annotations";
-const imageRootURL = "http://edition-staging.makingandknowing.org/bnf-ms-fr-640/images";
+const annotationRootURL = "http://142.93.204.224/annotations";
+const imageRootURL = "http://142.93.204.224/images";
 const maxDriveTreeDepth = 20;
 const docxMimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 const jpegMimeType = "image/jpeg";
@@ -36,9 +38,6 @@ const figureCitation = /[F|f]ig(\.|ure[\.]*)[\s]*[0-9]+/;
 const figureNumber = /[0-9]+/;
 const invalidFigureNumber = "XX";
 
-function sleep(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 async function loadAnnotationMetadata() {
     const csvData = fs.readFileSync(annotationMetaDataCSV).toString();
@@ -59,26 +58,6 @@ async function loadAnnotationMetadata() {
         annotationMetadata[metaData.driveID] = metaData;
     });    
     return annotationMetadata
-}
-
-async function loadComments() {
-    const csvData = fs.readFileSync(commentsCSV).toString();
-    let comments = {};
-    const tableObj = await csv().fromString(csvData)        
-    tableObj.forEach( entry => {
-        let comment = {
-            id: entry['Comment-ID'],
-            folio: entry['Folio'],
-            tc: (entry['TC'] === 'X'),
-            tcn: (entry['TCN'] === 'X'),
-            tl: (entry['TL'] === 'X'),
-            includeDCE: (entry['Include-DCE'] === 'X'),
-            comment: entry['Comment']
-        }
-
-        comments[comment.id] = comment;
-    });    
-    return comments
 }
 
 async function loadAuthors() {
@@ -231,7 +210,8 @@ function locateAnnotationAssets(useCache) {
     if( useCache )  {
         annotationDriveJSON = fs.readFileSync(cachedAnnotationDriveScan, "utf8");
     } else {
-        const buffer = execSync(`rclone lsjson --drive-shared-with-me -R google:"${googleShareName}"`, (error, stdout, stderr) => {
+        const shared = rCloneSharedDrive ? "--drive-shared-with-me" : ""
+        const buffer = execSync(`rclone lsjson ${shared} -R ${rCloneServiceName}:"${googleShareName}"`, (error, stdout, stderr) => {
             if (error !== null) {
                 throw `ERROR: Unable to list Google Drive: ${googleShareName}`;
             } 
@@ -251,32 +231,29 @@ function locateAnnotationAssets(useCache) {
             let biblioFile = null;
             let illustrations = [];
             if( annotationRoot.children ) {
-                annotationRoot.children.forEach( assetFolder => {
-                    if( assetFolder.children ) {
-                        // locate the text file and captions file in docx format, there should be exactly one in folder
-                        if( assetFolder.children.length === 1 ) {
-                            let fileNode = assetFolder.children[0];
-                            if( fileNode.mimeType === docxMimeType ) {
-                                if( assetFolder.name.includes('Text_') ) {
-                                    textFileNode = fileNode;
-                                } else if( assetFolder.name.includes('Captions_') ) {
-                                    captionFile = fileNode;
-                                } else if( assetFolder.name.includes('Abstract_') ) {
-                                    abstractFile = fileNode;
-                                } else if( assetFolder.name.includes('Bibliography_') ) {
-                                    biblioFile = fileNode;
-                                }       
-                            }
-                        }
+                annotationRoot.children.forEach( assetFile => {
 
+                    if( assetFile.mimeType === docxMimeType ) {
+                        if( assetFile.name.includes('Text_') ) {
+                            textFileNode = assetFile;
+                        } else if( assetFile.name.includes('Captions_') ) {
+                            captionFile = assetFile;
+                        } else if( assetFile.name.includes('Abstract_') ) {
+                            abstractFile = assetFile;
+                        } else if( assetFile.name.includes('Bibliography_') ) {
+                            biblioFile = assetFile;
+                        }       
+                    }
+
+                    if( assetFile.children ) {
                         // locate the illustrations, if any
-                        if( assetFolder.name.includes('Illustrations_') ) {
-                            assetFolder.children.forEach( illustrationFile => {
+                        if( assetFile.children.length > 0 && assetFile.name.includes('Illustrations_') ) {
+                            assetFile.children.forEach( illustrationFile => {
                                 if( illustrationFile.mimeType === jpegMimeType ) {
                                     illustrations.push( illustrationFile );
                                 }
                             });
-                        }
+                        }                        
                     } 
                 });  
             } else {
@@ -297,7 +274,7 @@ function locateAnnotationAssets(useCache) {
                 logger.info(`Found annotation: ${textFileNode.id} in ${googleShareName}${path}`);
             } else {
                 const path = nodeToPath(annotationRoot);
-                logger.info(`Annotation not found. Must contain Text_* subfolder with exactly one docx file: ${path}`);
+                logger.info(`Annotation not found. Must contain docx file with Text_* in the filename: ${path}`);
             }
         });
     });
@@ -406,7 +383,8 @@ function dirExists( dir ) {
 function syncDriveFile( source, dest ) {
     // escape all quotes in source path
     const escSource = source.replace(/"/g, '\\"')  
-    const cmd = `rclone --drive-shared-with-me sync google:"${escSource}" "${dest}"`;
+    const shared = rCloneSharedDrive ? "--drive-shared-with-me" : ""
+    const cmd = `rclone ${shared} sync ${rCloneServiceName}:"${escSource}" "${dest}"`;
     logger.info(cmd);
     execSync(cmd, (error, stdout, stderr) => {
         console.log(`${stdout}`);
@@ -418,7 +396,7 @@ function syncDriveFile( source, dest ) {
 }
 
 
-function processAnnotations(annotationAssets, annotationMetadata, authors, comments) {
+function processAnnotations(annotationAssets, annotationMetadata, authors ) {
 
     logger.info("Processing Annotations")
     logSeperator()
@@ -431,13 +409,13 @@ function processAnnotations(annotationAssets, annotationMetadata, authors, comme
     let annotationContent = []
     annotationAssets.forEach( asset => {
         const metadata = annotationMetadata[asset.id]
-        let annotationAuthors = []
-        Object.values(authors).forEach( author => {
-            if( author.annotations.includes(metadata.id) ) {
-                annotationAuthors.push( author.id )
-            }
-        })
         if( metadata ) {
+            let annotationAuthors = []
+            Object.values(authors).forEach( author => {
+                if( author.annotations.includes(metadata.id) ) {
+                    annotationAuthors.push( author.id )
+                }
+            })
             let annotation = processAnnotation(asset,metadata,annotationAuthors)
             annotationContent.push(annotation)
         } else {
@@ -467,15 +445,6 @@ function processAnnotations(annotationAssets, annotationMetadata, authors, comme
           logger.info(err)
         } 
     });
-
-    // write out editorial comments
-    fs.writeFile(targetCommentsFile, JSON.stringify(comments, null, 3), (err) => {
-        if (err) {
-        console.log(err)
-        logger.info(err)
-        } 
-    });
-    
 }
 
 function processAnnotation( annotationAsset, metadata, authors ) {
@@ -693,7 +662,7 @@ function quickFix( driveAssets ) {
 async function run(mode) {
     switch( mode ) {
         case 'download': {
-            const annotationDriveAssets = locateAnnotationAssets(true);
+            const annotationDriveAssets = locateAnnotationAssets(false);
             syncDriveAssets( annotationDriveAssets );
             }
             break;
@@ -701,8 +670,7 @@ async function run(mode) {
             const annotationAssets = findLocalAssets();
             const annotationMetadata = await loadAnnotationMetadata()
             const authors = await loadAuthors()
-            const comments = await loadComments()
-            processAnnotations(annotationAssets,annotationMetadata,authors,comments)
+            processAnnotations(annotationAssets,annotationMetadata,authors)
             }
             break;
         case 'scan':
@@ -711,18 +679,18 @@ async function run(mode) {
         case 'index':
             searchIndex.generateAnnotationIndex(targetAnnotationDir, targetSearchIndexDir);
             break;
-        case 'fix': {
-            const annotationDriveAssets = locateAnnotationAssets(true);
-            quickFix(annotationDriveAssets);
-            }
-            break;
-        case 'all': {
+        // case 'fix': {
+        //     const annotationDriveAssets = locateAnnotationAssets(true);
+        //     quickFix(annotationDriveAssets);
+        //     }
+        //     break;
+        case 'run': {
             const annotationDriveAssets = locateAnnotationAssets();
             const annotationAssets = syncDriveAssets( annotationDriveAssets );
             const annotationMetadata = await loadAnnotationMetadata()
             const authors = await loadAuthors()
-            const comments = await loadComments()
-            processAnnotations(annotationAssets,annotationMetadata,authors,comments)
+            processAnnotations(annotationAssets,annotationMetadata,authors)
+            searchIndex.generateAnnotationIndex(targetAnnotationDir, targetSearchIndexDir);
             }
             break;
     }    
@@ -732,12 +700,22 @@ async function run(mode) {
 function main() {
     setupLogging();
 
-    // TODO control mode with command line args
-    const mode = 'process';
-
+    let mode;
+    if (process.argv.length <= 2) {
+        mode = 'help'
+    } else {
+        mode = process.argv[2];
+    }
+     
     if( mode === 'help' ) {
-        console.log("A helpful lizard.")
-        return;
+        console.log(`Usage: lizard.js <command>` );
+        console.log("A helpful lizard that responds to the following commands:")
+        console.log("\tdownload: Download the annotations from Google Drive via rclone.");
+        console.log("\tprocess: Process the downloaded files and place them on the asset server.");
+        console.log("\tindex: Create a search index of the annotations.");
+        console.log("\trun: Do all of the above.")
+        console.log("\thelp: Displays this help. ");
+        process.exit(-1);
     }
 
     let date = new Date();

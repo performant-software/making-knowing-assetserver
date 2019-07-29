@@ -3,6 +3,13 @@ const { execSync } = require('child_process');
 
 const searchIndex = require('./search_index');
 const convert = require('./convert');
+const glossary = require('./glossary');
+const comments = require('./comments');
+
+const commentsCSV = "scripts/content_import/TEMP/input/metadata/DCE_comment-tracking-Tracking.csv";
+const glossaryCSV = "scripts/content_import/TEMP/input/glossary/DCE-glossary-table.csv";
+const targetCommentsFile = 'nginx/webroot/comments.json';
+const targetGlossaryFile = "nginx/webroot/glossary.json"
 
 const waitTimeLengthMins = 1;
 
@@ -156,6 +163,12 @@ async function main() {
 
   console.log('Generate Search Index...');
   searchIndex.generate(folioPath, searchIndexPath);
+
+  console.log('Generate Glossary...');
+  await glossary.generate(glossaryCSV, targetGlossaryFile);
+
+  console.log('Generate Comments...');
+  await comments.generate(commentsCSV, targetCommentsFile);
 
   console.log('sleeping');
   sleep(nextInterval());
