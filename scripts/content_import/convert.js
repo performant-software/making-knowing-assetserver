@@ -55,9 +55,7 @@ const convertToSpan =[
 ];
 
 const filterOut = [
-  'id',
-  'margin',
-  'render'
+  
 ];
 
 function validLayoutCode( layoutCode ) {
@@ -180,9 +178,9 @@ function convertFigure( htmlDoc, figure ) {
   return figDiv;
 }
 
-function convertCont( htmlDoc, cont ) {
+function divMessage( htmlDoc, message ) {
   let contDiv = htmlDoc.createElement('div');
-  contDiv.innerHTML = "<i>Continued...</i>";
+  contDiv.innerHTML = `<i>${message}</i>`;
   return contDiv;
 }
 
@@ -209,6 +207,9 @@ function convertXML(xml, fileID) {
   for( let div of divs ) {
     let zoneDiv = htmlDoc.createElement('div');
     zoneDiv.id = div.getAttribute('id')
+    if( div.getAttribute('continues') === 'yes' ) {
+      zoneDiv.appendChild( divMessage(htmlDoc, '...Continued') );
+    }
 
     for( let child of div.children ) {
       if( child.nodeName === 'ab') {
@@ -219,10 +220,11 @@ function convertXML(xml, fileID) {
       }
       else if( child.nodeName === 'head' ) {
         zoneDiv.appendChild( convertHead(htmlDoc, child) );
-      }
-      else if( child.nodeName === 'cont' ) {
-        zoneDiv.appendChild( convertCont(htmlDoc, child) );
-      }
+      }      
+    }
+
+    if( div.getAttribute('continued') === 'yes' ) {
+      zoneDiv.appendChild( divMessage(htmlDoc, 'Continued...') );
     }
 
     // filter out certain tags
