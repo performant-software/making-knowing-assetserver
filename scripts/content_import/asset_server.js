@@ -40,9 +40,9 @@ function downloadFiles(inputDir) {
 }
 
 function reorganizeFiles(pullDir, orderedDir) {
-  const inputDir = `${pullDir}/post_processed`;
+  const inputDir = `${pullDir}/ms-xml`;
 
-  const listDir = fs.readdirSync(`${pullDir}/post_processed/tc`);
+  const listDir = fs.readdirSync(`${pullDir}/ms-xml/tc`);
 
   listDir.forEach( page => {
     // extract folio ID

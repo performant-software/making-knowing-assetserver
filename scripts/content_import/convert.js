@@ -28,36 +28,6 @@ const hintCodes = [
   'extra-wide'
 ];
 
-const convertToSpan =[
-  'al',
-  'bp',
-  'cn',
-  'cont',
-  'env',
-  'fr',
-  'df',
-  'gk',
-  'it',
-  'la',
-  'ms',
-  'mu',
-  'oc',
-  'pa',
-  'pl',
-  'pm',
-  'pn',
-  'pro',
-  'sn',
-  'tl',
-  'tmp',
-  'unc',
-  'x'
-];
-
-const filterOut = [
-  
-];
-
 function validLayoutCode( layoutCode ) {
   if( marginCodes.includes(layoutCode) ) {
     return layoutCode;
@@ -146,10 +116,6 @@ function convertPhraseLevelMarkup( htmlDoc, el, elementName ) {
   findAndReplaceElementName( htmlDoc, newEl, 'LB', 'BR' );
   findAndReplaceElementName( htmlDoc, newEl, 'DEL', 'S' );
 
-  for( let tag of convertToSpan ) {
-    findAndReplaceElementName( htmlDoc, newEl, tag, 'SPAN' );
-  }
-
   return newEl;
 }
 
@@ -225,11 +191,6 @@ function convertXML(xml, fileID) {
 
     if( div.getAttribute('continued') === 'yes' ) {
       zoneDiv.appendChild( divMessage(htmlDoc, 'Continued...') );
-    }
-
-    // filter out certain tags
-    for( let tag of filterOut ) {
-      findAndRemoveElement( zoneDiv, tag );
     }
 
     // create a zone in the htmlDOM
