@@ -112,10 +112,6 @@ function findAndReplaceElementName( htmlDoc, parent, oldElementName, newElementN
 function convertPhraseLevelMarkup( htmlDoc, el, elementName ) {
   let newEl = htmlDoc.createElement(elementName);
   newEl.innerHTML = el.innerHTML;
-
-  findAndReplaceElementName( htmlDoc, newEl, 'LB', 'BR' );
-  findAndReplaceElementName( htmlDoc, newEl, 'DEL', 'S' );
-
   return newEl;
 }
 
