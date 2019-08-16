@@ -28,38 +28,6 @@ const hintCodes = [
   'extra-wide'
 ];
 
-const convertToSpan =[
-  'al',
-  'bp',
-  'cn',
-  'cont',
-  'env',
-  'fr',
-  'df',
-  'gk',
-  'it',
-  'la',
-  'ms',
-  'mu',
-  'oc',
-  'pa',
-  'pl',
-  'pm',
-  'pn',
-  'pro',
-  'sn',
-  'tl',
-  'tmp',
-  'unc',
-  'x'
-];
-
-const filterOut = [
-  'id',
-  'margin',
-  'render'
-];
-
 function validLayoutCode( layoutCode ) {
   if( marginCodes.includes(layoutCode) ) {
     return layoutCode;
@@ -144,21 +112,13 @@ function findAndReplaceElementName( htmlDoc, parent, oldElementName, newElementN
 function convertPhraseLevelMarkup( htmlDoc, el, elementName ) {
   let newEl = htmlDoc.createElement(elementName);
   newEl.innerHTML = el.innerHTML;
-
-  findAndReplaceElementName( htmlDoc, newEl, 'LB', 'BR' );
-  findAndReplaceElementName( htmlDoc, newEl, 'DEL', 'S' );
-
-  for( let tag of convertToSpan ) {
-    findAndReplaceElementName( htmlDoc, newEl, tag, 'SPAN' );
-  }
-
   return newEl;
 }
 
 function convertAB( htmlDoc, ab ) {
   let abDiv = convertPhraseLevelMarkup( htmlDoc, ab, 'div' );
-  abDiv.dataset.layout = validLayoutCode( findDataElement( ab, 'margin' ) );
-  const layoutHint = validLayoutHint( findDataElement( ab, 'render') );
+  abDiv.dataset.layout = validLayoutCode( ab.getAttribute('margin') );
+  const layoutHint = validLayoutHint( ab.getAttribute('render') );
   if( layoutHint ) {
     abDiv.dataset.layoutHint = layoutHint;
   }
@@ -171,18 +131,18 @@ function convertHead( htmlDoc, head ) {
 }
 
 function convertFigure( htmlDoc, figure ) {
-  let figureID = findDataElement( figure, 'id' );
+  let figureID = figure.getAttribute('id');
   let figureURL = ( figureID ) ? `${figuresDir}/${figureID.substr(4)}.png` : null;
   let figDiv = htmlDoc.createElement('div');
-  figDiv.id = findDataElement( figure, 'id' );
-  figDiv.dataset.layout = validLayoutCode( findDataElement( figure, 'margin' ) );
+  figDiv.id = figureID;
+  figDiv.dataset.layout = validLayoutCode( figure.getAttribute('margin') );
   figDiv.innerHTML = ( figureURL ) ?  `<img alt='' className='inline-figure' src='${figureURL}'/>` : "";
   return figDiv;
 }
 
-function convertCont( htmlDoc, cont ) {
+function divMessage( htmlDoc, message ) {
   let contDiv = htmlDoc.createElement('div');
-  contDiv.innerHTML = "<i>Continued...</i>";
+  contDiv.innerHTML = `<i>${message}</i>`;
   return contDiv;
 }
 
@@ -208,7 +168,10 @@ function convertXML(xml, fileID) {
 
   for( let div of divs ) {
     let zoneDiv = htmlDoc.createElement('div');
-    zoneDiv.id = findDataElement( div, 'id' );
+    zoneDiv.id = div.getAttribute('id')
+    if( div.getAttribute('continues') === 'yes' ) {
+      zoneDiv.appendChild( divMessage(htmlDoc, '...Continued') );
+    }
 
     for( let child of div.children ) {
       if( child.nodeName === 'ab') {
@@ -219,15 +182,11 @@ function convertXML(xml, fileID) {
       }
       else if( child.nodeName === 'head' ) {
         zoneDiv.appendChild( convertHead(htmlDoc, child) );
-      }
-      else if( child.nodeName === 'cont' ) {
-        zoneDiv.appendChild( convertCont(htmlDoc, child) );
-      }
+      }      
     }
 
-    // filter out certain tags
-    for( let tag of filterOut ) {
-      findAndRemoveElement( zoneDiv, tag );
+    if( div.getAttribute('continued') === 'yes' ) {
+      zoneDiv.appendChild( divMessage(htmlDoc, 'Continued...') );
     }
 
     // create a zone in the htmlDOM
