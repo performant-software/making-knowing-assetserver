@@ -135,7 +135,7 @@ async function main() {
 
   let mode;
   if (process.argv.length <= 2) {
-      mode = 'help'
+      mode = 'pull'
   } else {
       mode = process.argv[2];
   }
