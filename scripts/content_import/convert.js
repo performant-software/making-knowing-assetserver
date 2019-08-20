@@ -21,6 +21,12 @@ const marginCodes = [
   'right-bottom'
 ];
 
+const figureSizes = [
+  'small',
+  'medium',
+  'large'
+]
+
 const hintCodes = [
   'tall',
   'extra-tall',
@@ -41,6 +47,14 @@ function validLayoutHint( layoutHint ) {
     return layoutHint;
   } else {
     return null;
+  }
+}
+
+function validFigureSize( figureSize ) {
+  if( figureSizes.includes(figureSize) ) {
+    return figureSize;
+  } else {
+    return 'medium';
   }
 }
 
@@ -146,11 +160,12 @@ function convertHead( htmlDoc, head ) {
 function createFigureEl( htmlDoc, figure ) {
   let figureID = figure.getAttribute('id');
   let figureURL = ( figureID ) ? `${figuresDir}/${figureID.substr(4)}.png` : null;
+  let figureSize = validFigureSize( figure.getAttribute('size') );
   let figureEl = htmlDoc.createElement('figure');
   let imgEl = htmlDoc.createElement('img');
   imgEl.id = figureID;
   imgEl.setAttribute('alt','');
-  imgEl.setAttribute('className','inline-figure');
+  imgEl.setAttribute('className',`${figureSize}-inline-figure`);
   imgEl.setAttribute('src', ( figureURL ) ? figureURL : "" );
   figureEl.appendChild(imgEl) 
 
