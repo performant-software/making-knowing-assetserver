@@ -21,8 +21,8 @@ const devConfiguration = {
 
 const prodConfiguration = {
   iiifDomain: "http://edition.makingandknowing.org",
-  transcriptionDomain: "http://209.97.145.244",
-  folioPath: "/folio",
+  transcriptionDomain: "http://edition.makingandknowing.org",
+  folioPath: "/bnf-ms-fr-640/folio",
   listPath: "/list",
   manifestFilename: 'manifest.json',
   annotationListPath: "/bnf-ms-fr-640/list"

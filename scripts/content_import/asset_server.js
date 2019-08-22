@@ -55,7 +55,7 @@ function reorganizeFiles(pullDir, orderedDir) {
 
       if( dirExists(targetDir) ) {
         transcriptionTypes.forEach( transcriptionType => {
-          const sourceFile = `${inputDir}/${transcriptionType}/${transcriptionType}_${folioID}_preTEI_attrs.xml`;
+          const sourceFile = `${inputDir}/${transcriptionType}/${transcriptionType}_${folioID}_preTEI.xml`;
           if(fs.existsSync(sourceFile)) {
             const targetFile = `${targetDir}/${transcriptionType}_${folioID}.txt`;
             fs.copyFileSync(sourceFile, targetFile);
@@ -135,7 +135,7 @@ async function main() {
 
   let mode;
   if (process.argv.length <= 2) {
-      mode = 'help'
+      mode = 'pull'
   } else {
       mode = process.argv[2];
   }
