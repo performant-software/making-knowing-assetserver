@@ -1,12 +1,3 @@
 .DS_Store
-TEMP
-node_modules
-unknown
 .vscode
-logfile.txt
-nginx/webroot/annotations
-nginx/webroot/folio
-nginx/webroot/search-idx
-nginx/webroot/images
-nginx/webroot/comments.json
-nginx/webroot/glossary.json
+nginx/webroot
