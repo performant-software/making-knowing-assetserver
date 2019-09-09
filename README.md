@@ -31,10 +31,11 @@ git clone https://github.com/cu-mkp/m-k-manuscript-data.git
 }
 ```
 
-4. Create the `nginx/webroot/bnf-ms-fr-640` directory reference above.
+4. Create the necessary directories referenced above.
 
 ```
 mkdir nginx/webroot/bnf-ms-fr-640
+mkdir making-knowing-edition/edition_data/working
 ```
 
 5. Start the process manager from the base directory of the project:
