@@ -59,3 +59,27 @@ To undo this:
 pm2 unstartup systemd
 ```
 
+Asset Server Installation
+-------
+
+Please note that the asset server only hosts the data directory, it does not host the making and knowing website. It is only meant to be used during the development of the edition. For production installation, see the making and knowing README.
+
+
+) install nginx
+) install pm2
+) clone the making and knowing repo
+) clone the m-k-manuscript-data repo
+) follow the instructions for installing making and knowing, except make your config file look like:
+
+{
+    "editionDataURL": "http://edition-staging.makingandknowing.org/bnf-ms-fr-640",
+    "targetDir": "../nginx/webroot/bnf-ms-fr-640",
+    "sourceDir": "../m-k-manuscript-data",
+    "workingDir": "edition_data/working"
+}
+
+) Create the nginx/webroot/bnf-ms-fr-640 directory
+) pm2 start to get the thing started
+
+
+
