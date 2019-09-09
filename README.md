@@ -6,28 +6,21 @@ The Making and Knowing Asset Server is used to keep the staging server up to dat
 Setup
 -----
 
-1. You will need to set up and configure [rclone](https://rclone.org/) which provides rsync-like functionality. Set up rclone to have a destination called 'google' which is authorized to access the share. On my mac with homebrew and interactive session:  
-
-```
-brew install rclone  
-rclone config
-```
-
-2. Install the [pm2](https://pm2.io/) process manager: 
+1. Install the [pm2](https://pm2.io/) process manager: 
 
 ```
 cd ../..
 yarn global add pm2
 ```
 
-3. Clone the [Making and Knowing](https://github.com/cu-mkp/making-knowing-edition) and [MK Manuscript Data](https://github.com/cu-mkp/m-k-manuscript-data) repos into this directory.
+2. Clone the [Making and Knowing](https://github.com/cu-mkp/making-knowing-edition) and [MK Manuscript Data](https://github.com/cu-mkp/m-k-manuscript-data) repos into this directory.
 
 ```
 git clone https://github.com/cu-mkp/making-knowing-edition.git
 git clone https://github.com/cu-mkp/m-k-manuscript-data.git
 ```
 
-4. follow the instructions for installing making and knowing, except make your config file look like:
+3. follow the instructions for installing making and knowing, except make your config file look like:
 
 ```
 {
@@ -38,17 +31,20 @@ git clone https://github.com/cu-mkp/m-k-manuscript-data.git
 }
 ```
 
-5. Create the `nginx/webroot/bnf-ms-fr-640` directory reference above.
+4. Create the `nginx/webroot/bnf-ms-fr-640` directory reference above.
 
 ```
 mkdir nginx/webroot/bnf-ms-fr-640
 ```
 
-6. Start the process manager from the base directory of the project:
+5. Start the process manager from the base directory of the project:
 
 ```
 pm2 start
 ```
+
+6. Start nginx
+
 
 Setup Notes
 ------------
