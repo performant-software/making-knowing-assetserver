@@ -17,6 +17,8 @@ ln -s /root/making-knowing-assetserver/nginx/nginx.conf nginx.conf
 rm sites-enabled 
 ln -s /root/making-knowing-assetserver/nginx/sites-enabled/ ./sites-enabled
 sudo systemctl reload nginx
+cd /
+chmod +x root
 ```
 
 3. Install the [pm2](https://pm2.io/) process manager: 
