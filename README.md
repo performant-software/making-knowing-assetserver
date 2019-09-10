@@ -6,20 +6,33 @@ The Making and Knowing Asset Server is used to keep the staging server up to dat
 Setup
 -----
 
-1. Install the [pm2](https://pm2.io/) process manager: 
+1. Install [nginx](https://nginx.org/) using your favorite package manager.
+
+2. Configure nginx. Your setup may vary depending on OS and other considerations. Here are the steps we used for Ubuntu:
+
+```
+cd /etc/nginx/
+rm nginx.conf
+ln -s /root/making-knowing-assetserver/nginx/nginx.conf nginx.conf
+rm sites-enabled 
+ln -s /root/making-knowing-assetserver/nginx/sites-enabled/ ./sites-enabled
+sudo systemctl reload nginx
+```
+
+3. Install the [pm2](https://pm2.io/) process manager: 
 
 ```
 yarn global add pm2
 ```
 
-2. Clone the [Making and Knowing](https://github.com/cu-mkp/making-knowing-edition) and [MK Manuscript Data](https://github.com/cu-mkp/m-k-manuscript-data) repos into this directory.
+4. Clone the [Making and Knowing](https://github.com/cu-mkp/making-knowing-edition) and [MK Manuscript Data](https://github.com/cu-mkp/m-k-manuscript-data) repos into this directory.
 
 ```
 git clone https://github.com/cu-mkp/making-knowing-edition.git
 git clone https://github.com/cu-mkp/m-k-manuscript-data.git
 ```
 
-3. follow the instructions for installing making and knowing, except make your config file look like:
+5. follow the instructions for installing making and knowing, except make your config file look like:
 
 ```
 {
@@ -30,23 +43,20 @@ git clone https://github.com/cu-mkp/m-k-manuscript-data.git
 }
 ```
 
-4. Create the necessary directories referenced above.
+6. Create the necessary directories referenced above.
 
 ```
 mkdir nginx/webroot/bnf-ms-fr-640
 mkdir making-knowing-edition/edition_data/working
 ```
 
-5. Start the process manager from the base directory of the project:
+7. Start the process manager from the base directory of the project:
 
 ```
 pm2 start
 ```
 
-6. Start nginx
-
-
-Setup Notes
+Notes
 ------------
 
 To make the process manager automatically restart on system start:
