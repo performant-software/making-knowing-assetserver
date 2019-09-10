@@ -9,7 +9,6 @@ Setup
 1. Install the [pm2](https://pm2.io/) process manager: 
 
 ```
-cd ../..
 yarn global add pm2
 ```
 
