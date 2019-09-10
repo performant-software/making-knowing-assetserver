@@ -38,7 +38,7 @@ git clone https://github.com/cu-mkp/m-k-manuscript-data.git
 
 ```
 {
-    "editionDataURL": "http://edition-staging.makingandknowing.org/bnf-ms-fr-640",
+    "editionDataURL": "<<< YOUR ASSET SERVER'S URL >>",
     "targetDir": "../nginx/webroot/bnf-ms-fr-640",
     "sourceDir": "../m-k-manuscript-data",
     "workingDir": "edition_data/working"
