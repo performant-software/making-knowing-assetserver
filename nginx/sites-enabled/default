@@ -6,7 +6,7 @@ upstream postgrest {
 server {
 	listen 80 default_server;
 	listen [::]:80 default_server;
-	root /var/www/html;
+	root /root/making-knowing-assetserver/nginx/webroot;
 	index  index.html index.htm;
 	autoindex on;
 	server_name _;
@@ -40,8 +40,6 @@ server {
            add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
            add_header 'Access-Control-Allow-Headers' 'DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization';
         }
-
-		alias /root/making-knowing-assetserver/nginx/webroot/;
 	}
 
 }
