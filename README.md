@@ -1,50 +1,64 @@
 Making and Knowing Asset Server
 ================
 
-The server periodically retrieves and updates content in DOCX form from the google drive share, it then converts it to .html and serves it in a known structure as an API for the M+K front end.
-
-To get an individual folio:
-```
-Format:  
-[your domain]/folio/[id]/[tc|tcn|tl]/
-
-Example:  
-http://209.97.145.244/folio/p001v/tcn
-```
-
-Visit the following to see the status of the import:  
-```
-[your domain]/import_status.html
-```
+The Making and Knowing Asset Server is used to keep the staging server up to date with the latest folios and commentary from the MK Manuscript Data Repository and the Research Essays from Google Drive. It hosts the data directory for the edition on an nginx server. Please not that the asset server does not host the UI of the edition itself. Please see the Making and Knowing project README for more details. 
 
 Setup
 -----
-1. You will need to set up and configure [rclone](https://rclone.org/) which provides rsync-like functionality. Set up rclone to have a destination called 'google' which is authorized to access the share. On my mac with homebrew and interactive session:  
-```
-brew install rclone  
-rclone config
-```
 
-2. Next, install the Javascript dependencies in the scripts/content_import directory:
+1. Install [nginx](https://nginx.org/) using your favorite package manager.
+
+2. Configure nginx. Your setup may vary depending on OS and other considerations. Here are the steps we used for Ubuntu:
+
 ```
-cd scripts/content_import
-yarn install
+cd /etc/nginx/
+rm nginx.conf
+ln -s /root/making-knowing-assetserver/nginx/nginx.conf nginx.conf
+rm sites-enabled 
+ln -s /root/making-knowing-assetserver/nginx/sites-enabled/ ./sites-enabled
+sudo systemctl reload nginx
+cd /
+chmod +x root
 ```
 
 3. Install the [pm2](https://pm2.io/) process manager: 
 
 ```
-cd ../..
 yarn global add pm2
 ```
 
-4. Start the process manager from the base directory of the project:
+4. Clone the [Making and Knowing](https://github.com/cu-mkp/making-knowing-edition) and [MK Manuscript Data](https://github.com/cu-mkp/m-k-manuscript-data) repos into this directory.
+
+```
+git clone https://github.com/cu-mkp/making-knowing-edition.git
+git clone https://github.com/cu-mkp/m-k-manuscript-data.git
+```
+
+5. follow the instructions for installing making and knowing, except make your config file look like:
+
+```
+{
+    "editionDataURL": "<<< YOUR ASSET SERVER'S URL >>",
+    "targetDir": "../nginx/webroot/bnf-ms-fr-640",
+    "sourceDir": "../m-k-manuscript-data",
+    "workingDir": "edition_data/working"
+}
+```
+
+6. Create the necessary directories referenced above.
+
+```
+mkdir nginx/webroot/bnf-ms-fr-640
+mkdir making-knowing-edition/edition_data/working
+```
+
+7. Start the process manager from the base directory of the project:
 
 ```
 pm2 start
 ```
 
-Setup Notes
+Notes
 ------------
 
 To make the process manager automatically restart on system start:
@@ -58,4 +72,3 @@ To undo this:
 ```
 pm2 unstartup systemd
 ```
-
