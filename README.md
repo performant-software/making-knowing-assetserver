@@ -1,12 +1,16 @@
 Making and Knowing Asset Server
 ================
 
-The Making and Knowing Asset Server is used to keep the staging server up to date with the latest folios and commentary from the MK Manuscript Data Repository and the Research Essays from Google Drive. It hosts the data directory for the edition on an nginx server. Please not that the asset server does not host the UI of the edition itself. Please see the Making and Knowing project README for more details. 
+The Making and Knowing Asset Server is used to keep the staging server up to date with the latest folios and commentary from the MK Manuscript Data Repository and the Research Essays from Google Drive. It hosts the data directory for the edition on an nginx server. Please note that the asset server does not host the UI of the edition itself. Please see the Making and Knowing project README for more details. 
 
 Setup
 -----
 
-1. Install [nginx](https://nginx.org/) using your favorite package manager.
+1. Install [nginx](https://nginx.org/) using your favorite package manager. 
+
+```
+apt-get install nginx
+```
 
 2. Configure nginx. Your setup may vary depending on OS and other considerations. Here are the steps we used for Ubuntu:
 
