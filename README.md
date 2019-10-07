@@ -56,9 +56,16 @@ mkdir nginx/webroot/bnf-ms-fr-640
 mkdir making-knowing-edition/edition_data/working
 ```
 
+7. Copy the ecosystem.config.js file into project dir.
+
+```
+cp ecosystem.config.js making-knowing-edition
+```
+
 7. Start the process manager from the base directory of the project:
 
 ```
+cd making-knowing-edition
 pm2 start
 ```
 
