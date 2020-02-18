@@ -1,0 +1,67 @@
+upstream postgrest {
+		server localhost:3000;
+		keepalive 64;
+}
+
+server {
+	root /root/making-knowing-assetserver/nginx/webroot;
+	index  index.html index.htm;
+	autoindex on;
+    server_name asset-server.makingandknowing.org; # managed by Certbot
+
+
+	location / {
+
+		# First attempt to serve request as file, then
+		# as directory, then fall back to displaying a 404.
+		try_files $uri $uri/ =404;
+
+		# Permissive CORS
+		if ($request_method = 'OPTIONS') {
+           add_header 'Access-Control-Allow-Origin' '*';
+           add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+           add_header 'Access-Control-Allow-Headers' 'Cache-Control,Content-Type,Authorization';
+           #add_header 'Access-Control-Max-Age' 1728000;
+           add_header 'Content-Type' 'application/json charset=UTF-8';
+           add_header 'Content-Length' 0;
+           return 204;
+        }
+
+        if ($request_method = 'POST') {
+           add_header 'Access-Control-Allow-Origin' '*';
+           add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+           add_header 'Access-Control-Allow-Headers' 'Content-Type,Authorization';
+        }
+
+        if ($request_method = 'GET') {
+
+           add_header 'Access-Control-Allow-Origin' '*';
+           add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS';
+           add_header 'Access-Control-Allow-Headers' 'DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization';
+        }
+	}
+
+
+
+    listen [::]:443 ssl ipv6only=on; # managed by Certbot
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/asset-server.makingandknowing.org/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/asset-server.makingandknowing.org/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+
+server {
+    if ($host = asset-server.makingandknowing.org) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+	listen 80 ;
+	listen [::]:80 ;
+    server_name asset-server.makingandknowing.org;
+    return 404; # managed by Certbot
+
+
+}
